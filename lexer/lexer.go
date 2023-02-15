@@ -255,14 +255,21 @@ func (l *Lexer) scanNumber() (token.Token, string) {
 	tok := token.ILLEGAL
 
 	// first character already consumed
-	if l.chr == '0' {
+	if l.chr == '0' && isxboDigitStart(rune(l.peek())) {
 		l.next()
 		switch unicode.ToLower(l.chr) {
 		case 'x':
+			l.next()
+			tok, lit := l.scanHexDigits()
+			return tok, lit
 		case 'b':
-			// handle binary
+			l.next()
+			tok, lit := l.scanBinaryDigits()
+			return tok, lit
 		case 'o':
-			// handle octal
+			l.next()
+			tok, lit := l.scanOctalDigits()
+			return tok, lit
 		}
 	}
 	tok = token.INT
@@ -275,6 +282,30 @@ func (l *Lexer) scanNumber() (token.Token, string) {
 		}
 	}
 	return tok, string(l.src[offsetPre:l.offset])
+}
+
+func (l *Lexer) scanHexDigits() (tok token.Token, lit string) {
+	offsetPre := l.offset
+	for isHex(l.chr) {
+		l.next()
+	}
+	return token.INT, "0x" + string(l.src[offsetPre:l.offset])
+}
+
+func (l *Lexer) scanBinaryDigits() (tok token.Token, lit string) {
+	offsetPre := l.offset
+	for isBinary(l.chr) {
+		l.next()
+	}
+	return token.INT, "0b" + string(l.src[offsetPre:l.offset])
+}
+
+func (l *Lexer) scanOctalDigits() (tok token.Token, lit string) {
+	offsetPre := l.offset
+	for isOctal(l.chr) {
+		l.next()
+	}
+	return token.INT, "0o" + string(l.src[offsetPre:l.offset])
 }
 
 func (l *Lexer) scanString() string {
@@ -301,6 +332,27 @@ func isLetter(x rune) bool {
 	return false
 }
 
+func isHex(x rune) bool {
+	if isDigit(x) || 'A' <= x && x <= 'F' || 'a' <= x && x <= 'f' {
+		return true
+	}
+	return false
+}
+
+func isOctal(x rune) bool {
+	if '0' <= x && x <= '7' {
+		return true
+	}
+	return false
+}
+
+func isBinary(x rune) bool {
+	if x == '0' || x == '1' {
+		return true
+	}
+	return false
+}
+
 func isDigit(x rune) bool {
 	if '0' <= x && x <= '9' {
 		return true
@@ -309,14 +361,14 @@ func isDigit(x rune) bool {
 }
 
 func isIdentiferStart(x rune) bool {
-	if 'A' <= x && x <= 'Z' || 'a' <= x && x <= 'z' || x == '@' || x == '_' || x == '$' { // || x == '$'
+	if 'A' <= x && x <= 'Z' || 'a' <= x && x <= 'z' || x == '@' || x == '_' || x == '$' {
 		return true
 	}
 	return false
 }
 
 func isIdentifierBodyChar(x rune) bool {
-	if isIdentiferStart(x) || isDigit(x) || x == '-' || x == '.' { // || x == '$'
+	if isIdentiferStart(x) || isDigit(x) || x == '-' || x == '.' {
 		return true
 	}
 	return false
@@ -325,4 +377,11 @@ func isIdentifierBodyChar(x rune) bool {
 func (l *Lexer) error(offset int, message string) {
 	l.Errors = append(l.Errors, fmt.Errorf("%d: %s", offset, message))
 	l.ErrCount += 1
+}
+
+func isxboDigitStart(x rune) bool {
+	if x == 'x' || x == 'b' || x == 'o' {
+		return true
+	}
+	return false
 }
