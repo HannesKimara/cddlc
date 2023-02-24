@@ -29,3 +29,4 @@ testdata/local/
 
 # Environment files
 .env
+dist/
