@@ -22,3 +22,7 @@ func (pos Position) String() string {
 
 	return s
 }
+
+type PositionRange struct {
+	Start, End Position
+}
