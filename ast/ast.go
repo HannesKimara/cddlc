@@ -122,7 +122,7 @@ type (
 )
 
 func (t *SizeOperatorControl) String() string {
-	return "SizeOperatorControl ( Type: " + t.Type.String() + fmt.Sprintf("Size: %d", t.Size) + ")"
+	return "SizeOperatorControl ( Type: " + t.Type.String() + fmt.Sprintf("Size: %d", t.Size.Literal) + ")"
 }
 
 type TypeChoice struct {
