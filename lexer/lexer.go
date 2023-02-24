@@ -22,13 +22,18 @@ type TokenSer struct {
 	Literal string         `json:"literal"`
 }
 
+type Error struct {
+	Pos token.Position
+	Msg string
+}
+
 type Lexer struct {
 	src         []byte
 	chr         rune
 	offset      int // points to current character
 	rdOffset    int // points to the next character(used for peeking)
 	ErrCount    int
-	Errors      []error
+	Errors      []Error
 	lineOffsets []int
 }
 
@@ -96,17 +101,16 @@ func (l *Lexer) Scan() (tok token.Token, pos token.Position, lit string) {
 			tok = token.RPAREN
 		case '{':
 			tok = token.LBRACE
-		case '+':
-			tok = token.ONE_OR_MORE
-		case '*':
-			tok = token.ZERO_OR_MORE
 		case '}':
 			tok = token.RBRACE
-			lit = "}"
 		case '[':
 			tok = token.LBRACK
 		case ']':
 			tok = token.RBRACK
+		case '+':
+			tok = token.ONE_OR_MORE
+		case '*':
+			tok = token.ZERO_OR_MORE
 		case '<':
 			tok = token.LEFT_ANGLE_BRACKET
 		case '>':
@@ -133,7 +137,6 @@ func (l *Lexer) Scan() (tok token.Token, pos token.Position, lit string) {
 			}
 		case '&':
 			tok = token.AMPERSAND
-			lit = "&"
 		case '/':
 			if l.chr == '=' {
 				l.next()
@@ -187,6 +190,7 @@ func (l *Lexer) Scan() (tok token.Token, pos token.Position, lit string) {
 	}
 
 	return
+
 }
 
 func (l *Lexer) next() {
@@ -375,7 +379,7 @@ func isIdentifierBodyChar(x rune) bool {
 }
 
 func (l *Lexer) error(offset int, message string) {
-	l.Errors = append(l.Errors, fmt.Errorf("%d: %s", offset, message))
+	l.Errors = append(l.Errors, Error{Pos: token.Position{Offset: offset}, Msg: message})
 	l.ErrCount += 1
 }
 

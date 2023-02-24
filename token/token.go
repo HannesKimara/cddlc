@@ -13,6 +13,10 @@ var (
 	keywords map[string]Token
 )
 
+const (
+	LOWEST = 0
+)
+
 // The list of tokens
 const (
 	// Special Tokens
@@ -112,6 +116,11 @@ const (
 	control_operators_end
 )
 
+const (
+	LiteralBegin = literal_begin
+	LiteralEnd   = literal_end
+)
+
 var tokens = [...]string{
 	ILLEGAL: "ILLEGAL",
 	EOF:     "EOF",
@@ -124,7 +133,7 @@ var tokens = [...]string{
 	FLOAT:   "float",
 	FLOAT16: "float16",
 	FLOAT32: "float32",
-	FLOAT64: "float16",
+	FLOAT64: "float64",
 	TSTR:    "tstr",
 	TEXT:    "text",
 
@@ -211,6 +220,8 @@ func (t Token) String() string {
 	return out
 }
 
+// Lookup returns whether or not a string is cddl token else
+// returns an IDENT token
 func Lookup(str string) Token {
 	if v, ok := keywords[str]; ok {
 		return v
@@ -218,10 +229,44 @@ func Lookup(str string) Token {
 	return IDENT
 }
 
+// Precedence returns the token's precedence used to built the ast in
+// parsing
+func (t Token) Precedence() int {
+	switch t {
+	case EQ, TYPE_CHOICE_ASSIGN, GROUP_CHOICE_ASSIGN:
+		return 1
+	case GROUP_CHOICE:
+		return 2
+	case COMMA:
+		return 3
+	case ZERO_OR_MORE, ONE_OR_MORE, OPTIONAL:
+		return 4
+	case ARROW_MAP, COLON:
+		return 5
+	case TYPE_CHOICE:
+		return 6
+	// TODO: Investigate/Add `.ctrl` from https://www.rfc-editor.org/rfc/rfc8610#page-34
+	case INCLUSIVE_BOUND, EXCLUSIVE_BOUND:
+		return 7
+	case AMPERSAND, UNWRAP:
+		return 8
+	}
+	return LOWEST
+}
+
+func (t Token) IsLiteral(literal string) bool {
+	switch t {
+	case INT, UINT, NINT, FLOAT, FLOAT16, FLOAT32, FLOAT64:
+		return literal != tokens[t]
+	default:
+		return false
+	}
+}
+
 func init() {
 	keywords = make(map[string]Token)
 	// skip the IDENT literal
-	for i := Token(INT + 1); i < literal_end; i++ {
+	for i := Token(INT); i < literal_end; i++ {
 		v := tokens[i]
 		keywords[v] = i
 	}
