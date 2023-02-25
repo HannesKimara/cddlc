@@ -51,6 +51,10 @@ func TestIdentifers(t *testing.T) {
 		// test case sensitivity
 		{token.IDENT, "AB", "AB", ""},
 		{token.IDENT, "AaBb", "AaBb", ""},
+
+		// test dot continuation from https://www.rfc-editor.org/rfc/rfc8610#section-2.2.2.1
+		{token.IDENT, "min..max", "min..max", ""},
+		{token.IDENT, "min...max", "min...max", ""},
 	}
 
 	for _, tst := range tests {
