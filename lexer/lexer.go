@@ -74,7 +74,7 @@ func (l *Lexer) Scan() (tok token.Token, pos token.Position, lit string) {
 	case isIdentiferStart(chr):
 		lit = l.scanIdentifier()
 		// keywords are longer than two characters so avoid lookups for smaller
-		// TODO: check if keywords are fixed in spec
+		// TODO: check if keywords are fixed in spec or could be redefined. Optionally, have this as a compiler flag
 		if len(lit) > 2 {
 			tok = token.Lookup(lit)
 		} else {
@@ -174,7 +174,7 @@ func (l *Lexer) Scan() (tok token.Token, pos token.Position, lit string) {
 				tok = token.PERIOD
 			}
 		case '"':
-			tok = token.TEXT
+			tok = token.TEXT_LITERAL
 			lit = l.scanString()
 		case EOF:
 			tok = token.EOF
@@ -259,6 +259,8 @@ func (l *Lexer) scanNumber() (token.Token, string) {
 	tok := token.ILLEGAL
 
 	// first character already consumed
+
+	// TODO : Scan for hex, octal and binary fractionals
 	if l.chr == '0' && isxboDigitStart(rune(l.peek())) {
 		l.next()
 		switch unicode.ToLower(l.chr) {
@@ -281,7 +283,7 @@ func (l *Lexer) scanNumber() (token.Token, string) {
 	// TODO : Add support for all number types, int, floats
 	for unicode.IsDigit(l.chr) || l.chr == '.' && unicode.IsDigit(rune(l.peek())) {
 		l.next()
-		if l.chr == '.' {
+		if l.chr == '.' && l.peek() != '.' { // check that its not part of a bound .., ...
 			tok = token.FLOAT
 		}
 	}
@@ -317,16 +319,17 @@ func (l *Lexer) scanString() string {
 
 	for {
 		if l.chr < 0 || l.chr == '\n' {
-			l.error(l.offset, "unexpected newline char before string termination")
+			l.error(l.offset, "unexpected newline character before string termination")
 			break
 		}
 		if l.chr == '"' {
+			l.next()
 			break
 		}
 		l.next()
 	}
 
-	return string(l.src[offsetPre:l.offset])
+	return string(l.src[offsetPre : l.offset-1])
 }
 
 func isLetter(x rune) bool {

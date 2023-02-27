@@ -26,16 +26,22 @@ const (
 
 	literal_begin
 	IDENT // person
-	INT   // Unisigned integer or negative integer: -9 / 9
-	UINT  // Unsigned integer: 9
-	NINT  // Negative integer: -9
+
+	numeric_begin
+	INT  // Unisigned integer or negative integer: -9 / 9
+	UINT // Unsigned integer: 9
+	NINT // Negative integer: -9
 
 	FLOAT   // float; one of float16, float32, float64
 	FLOAT16 // A number representable as an IEEE 754 half-precision float (major type 7, additional information 25).
 	FLOAT32 // A number representable as an IEEE 754 single-precision float (major type 7, additional information 26).
 	FLOAT64 // A number representable as an IEEE 754 double-precision float (major type 7, additional information 27).
-	TSTR    // "text"
-	TEXT    // "text"
+
+	numeric_end
+
+	TSTR         // tstr
+	TEXT         // text
+	TEXT_LITERAL // "text"
 
 	BYTES // bytes
 	BSTR  // bstr
@@ -101,7 +107,8 @@ const (
 	LE      // .le
 	GT      // .gt
 	GE      // .ge
-	EQ      // .ne
+	EQ      // .eq
+	NE      // .ne
 	DEFAULT // .default
 
 	// Additional control operators RFC9165
@@ -114,6 +121,13 @@ const (
 	FEATURE // .feature
 
 	control_operators_end
+
+	parser_specific_begin
+
+	UNEXPECTED // Unexpected Token
+	EOL        // End of Line
+
+	parser_specific_end
 )
 
 const (
@@ -126,16 +140,17 @@ var tokens = [...]string{
 	EOF:     "EOF",
 	COMMENT: "COMMENT",
 
-	IDENT:   "IDENT",
-	INT:     "int",
-	UINT:    "uint",
-	NINT:    "nint",
-	FLOAT:   "float",
-	FLOAT16: "float16",
-	FLOAT32: "float32",
-	FLOAT64: "float64",
-	TSTR:    "tstr",
-	TEXT:    "text",
+	IDENT:        "IDENT",
+	INT:          "int",
+	UINT:         "uint",
+	NINT:         "nint",
+	FLOAT:        "float",
+	FLOAT16:      "float16",
+	FLOAT32:      "float32",
+	FLOAT64:      "float64",
+	TSTR:         "tstr",
+	TEXT:         "text",
+	TEXT_LITERAL: "text_literal",
 
 	BYTES: "bytes",
 	BSTR:  "bstr",
@@ -196,17 +211,21 @@ var tokens = [...]string{
 	LE:      ".le",
 	GT:      ".gt",
 	GE:      ".ge",
-	EQ:      ".ne",
+	EQ:      ".eq",
+	NE:      ".ne",
 	DEFAULT: ".default",
 
 	// Additional control operators RFC9165
-
 	PLUS:    ".plus",
 	CAT:     ".cat",
 	DET:     ".det",
 	ABNF:    ".abnf",
 	ABNFB:   ".abnfb",
 	FEATURE: ".feature",
+
+	// Parser specific tokens
+	UNEXPECTED: "UNEXPECTED",
+	EOL:        "EOL",
 }
 
 func (t Token) String() string {
@@ -229,8 +248,7 @@ func Lookup(str string) Token {
 	return IDENT
 }
 
-// Precedence returns the token's precedence used to built the ast in
-// parsing
+// Precedence returns the token's precedence used to built the ast in parsing
 func (t Token) Precedence() int {
 	switch t {
 	case EQ, TYPE_CHOICE_ASSIGN, GROUP_CHOICE_ASSIGN:
@@ -245,11 +263,13 @@ func (t Token) Precedence() int {
 		return 5
 	case TYPE_CHOICE:
 		return 6
-	// TODO: Investigate/Add `.ctrl` from https://www.rfc-editor.org/rfc/rfc8610#page-34
 	case INCLUSIVE_BOUND, EXCLUSIVE_BOUND:
 		return 7
 	case AMPERSAND, UNWRAP:
 		return 8
+	}
+	if t.IsControlOp() {
+		return 7
 	}
 	return LOWEST
 }
@@ -258,9 +278,24 @@ func (t Token) IsLiteral(literal string) bool {
 	switch t {
 	case INT, UINT, NINT, FLOAT, FLOAT16, FLOAT32, FLOAT64:
 		return literal != tokens[t]
+	case TEXT_LITERAL:
+		return true
 	default:
 		return false
 	}
+}
+
+func (t Token) IsControlOp() bool {
+	return inRange(t, control_operators_begin, control_operators_end)
+}
+
+// check if a value is in a non-inclusive range, x ∈ (lower, upper)
+func inRange[T Token | int](x, lower, upper T) bool {
+	return x > lower && x < upper
+}
+
+func (t Token) IsNumeric() bool {
+	return inRange(t, numeric_begin, numeric_end)
 }
 
 func init() {
