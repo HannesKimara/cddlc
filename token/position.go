@@ -1,6 +1,8 @@
 package token
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Position struct {
 	Filename string
@@ -21,6 +23,22 @@ func (pos Position) String() string {
 	}
 
 	return s
+}
+
+// To returns the Position(2) after a positive offset from the current position(1)
+//
+// name = tstr
+//        ^  ^
+//        |  |
+//        1  2
+// where offset is the length of the token(s)
+func (pos Position) To(offset int) Position {
+	return Position{
+		Filename: pos.Filename,
+		Offset:   pos.Offset + offset,
+		Line:     pos.Line,
+		Column:   pos.Column + offset,
+	}
 }
 
 type PositionRange struct {
