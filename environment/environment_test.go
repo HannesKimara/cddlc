@@ -10,8 +10,8 @@ import (
 type EnvInitializer func() *env.Environment
 
 func TestEnvAdd(t *testing.T) {
-	environ := env.NewEnvironment()
-	shared := func() *env.Environment { return environ }
+	sharedEnv := env.NewEnvironment()
+	shared := func() *env.Environment { return sharedEnv }
 
 	tests := []struct {
 		ident   string
@@ -28,6 +28,7 @@ func TestEnvAdd(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		environ := test.envInit()
 		err := environ.Add(test.ident, &test.value)
 		if err != test.err {
 			t.Fatal(err)
