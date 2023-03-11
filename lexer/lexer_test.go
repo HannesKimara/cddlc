@@ -1,16 +1,10 @@
 package lexer_test
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/flowfunction/cddl/lexer"
 	"github.com/flowfunction/cddl/token"
-)
-
-var (
-	_, b, _, _ = runtime.Caller(0)
-	// packagepath = filepath.Dir(b)
 )
 
 func ScanAll(lex *lexer.Lexer) []lexer.TokenSer {

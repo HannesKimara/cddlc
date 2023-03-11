@@ -58,7 +58,7 @@ func NewLexer(src []byte) *Lexer {
 		ErrCount: 0,
 	}
 
-	l.lineOffsets = append(l.lineOffsets, 0)
+	l.lineOffsets = append(l.lineOffsets, -1)
 
 	l.next()
 
@@ -186,7 +186,7 @@ func (l *Lexer) Scan() (tok token.Token, pos token.Position, lit string) {
 	pos = token.Position{
 		Offset: startOffset,
 		Line:   lenLines,
-		Column: startOffset - l.lineOffsets[lenLines-1] + 1,
+		Column: startOffset - l.lineOffsets[lenLines-1],
 	}
 
 	return
