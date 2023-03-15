@@ -18,7 +18,7 @@ func TestParseIdentifer(t *testing.T) {
 			"name = tstr",
 			&ast.CDDL{
 				Rules: []*ast.Rule{
-					{Name: &ast.Identifer{Name: "name"}},
+					{Name: &ast.Identifier{Name: "name"}},
 				},
 			},
 			"",
