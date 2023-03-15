@@ -2,6 +2,11 @@ package ast
 
 import "github.com/flowfunction/cddl/token"
 
+type GroupEntry interface {
+	Node
+	ge() // convenience function
+}
+
 type Group struct {
 	Pos   token.Position
 	Rules []Node

@@ -13,15 +13,9 @@ type CDDL struct {
 }
 
 func (c *CDDL) String() string {
-	// out, err := json.MarshalIndent(c, "", "	")
-	// if err != nil {
-	// 	return err.Error()
-	// }
-
-	// return string(out)
 	out := "CDDL ("
 	for _, rule := range c.Rules {
-		out += fmt.Sprintf("%s", rule)
+		out += fmt.Sprintf("%+v,", rule)
 	}
 	out += ")"
 	return out

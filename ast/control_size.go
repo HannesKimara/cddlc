@@ -8,7 +8,7 @@ type SizeOperatorControl struct {
 	Token token.Token
 
 	// Size: number of bytes
-	Size *IntegerLiteral
+	Size *UintLiteral
 	Type Node
 }
 

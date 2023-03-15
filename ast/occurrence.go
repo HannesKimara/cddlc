@@ -16,3 +16,18 @@ func (i *Optional) Start() token.Position {
 func (i *Optional) End() token.Position {
 	return i.Item.End()
 }
+
+type NMOccurrence struct {
+	Pos   token.Position
+	Token token.Token
+	N, M  *UintLiteral
+	Item  Node
+}
+
+func (nm *NMOccurrence) Start() token.Position {
+	return nm.Pos
+}
+
+func (nm *NMOccurrence) End() token.Position {
+	return nm.M.End()
+}

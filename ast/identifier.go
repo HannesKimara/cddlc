@@ -12,6 +12,8 @@ type Identifier struct {
 	Name string
 }
 
+func (i *Identifier) ge() {}
+
 func (i *Identifier) String() string {
 	return fmt.Sprintf("Identifier( Name: %s ) ", i.Name)
 }

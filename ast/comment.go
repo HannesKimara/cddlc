@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/flowfunction/cddl/token"
 )
 
@@ -10,10 +8,6 @@ import (
 type Comment struct {
 	Pos  token.Position
 	Text string
-}
-
-func (c *Comment) String() string {
-	return fmt.Sprintf("Comment ( Text:%s )", c.Text)
 }
 
 func (c *Comment) Start() token.Position {
@@ -35,7 +29,7 @@ func (cg *CommentGroup) String() (out string) {
 	}
 
 	for _, c := range cg.List {
-		out += c.Text[1:] + "\n"
+		out += c.Text + "\n"
 	}
 	return
 }
