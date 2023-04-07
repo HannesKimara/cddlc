@@ -2,7 +2,7 @@ package ast
 
 import "github.com/flowfunction/cddl/token"
 
-// ControlOpControl represents the AST Node for operators `.lt, .le, .gt, .ge, .eq, .ne` with numeric left right values.
+// ControlOpControl represents the AST Node for operators `.lt, .le, .gt, .ge, .eq, .ne` with numeric left and right values.
 // This also takes identifiers that resolve to numeric types.
 //
 // Numeric values are: `int, uint, nint, float, float16, float32, float64`
@@ -14,7 +14,7 @@ type ComparatorOpControl struct {
 }
 
 func (cc *ComparatorOpControl) Start() token.Position {
-	return cc.Left.End()
+	return cc.Left.Start()
 }
 
 func (cc *ComparatorOpControl) End() token.Position {

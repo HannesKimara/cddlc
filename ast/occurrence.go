@@ -25,7 +25,7 @@ type NMOccurrence struct {
 }
 
 func (nm *NMOccurrence) Start() token.Position {
-	return nm.Pos
+	return nm.N.Start()
 }
 
 func (nm *NMOccurrence) End() token.Position {

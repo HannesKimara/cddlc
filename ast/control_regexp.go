@@ -2,6 +2,7 @@ package ast
 
 import "github.com/flowfunction/cddl/token"
 
+// Regexp represents the AST Node for `.regexp` control operator
 type Regexp struct {
 	Pos   token.Position
 	Token token.Token
@@ -10,7 +11,7 @@ type Regexp struct {
 }
 
 func (r *Regexp) Start() token.Position {
-	return r.Pos
+	return r.Base.Start()
 }
 
 func (r *Regexp) End() token.Position {
