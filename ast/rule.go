@@ -19,3 +19,5 @@ func (r *Rule) End() token.Position {
 }
 
 func (r *Rule) ge() {}
+
+func (r *Rule) cddlEntry() {}

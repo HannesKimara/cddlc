@@ -9,7 +9,7 @@ import (
 // File Node represents a cddl source file
 type CDDL struct {
 	Pos   token.Position
-	Rules []*Rule
+	Rules []CDDLEntry
 }
 
 func (c *CDDL) String() string {

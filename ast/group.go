@@ -4,7 +4,7 @@ import "github.com/flowfunction/cddl/token"
 
 type GroupEntry interface {
 	Node
-	ge() // convenience function
+	groupEntry() // convenience function
 }
 
 type Group struct {
@@ -22,3 +22,5 @@ func (g *Group) End() token.Position {
 	}
 	return g.Rules[len(g.Rules)-1].End()
 }
+
+func (g *Group) groupEntry() {}

@@ -71,6 +71,10 @@ func (e *Error) Pos() token.Position {
 	return e.Range.Start
 }
 
+func (e *Error) Error() string {
+	return e.String()
+}
+
 // NewWarning returns a Warning with the provided parameters.
 func NewWarning(prefix, msg string, start token.Position, end token.Position) *Warning {
 	return &Warning{

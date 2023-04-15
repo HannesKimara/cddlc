@@ -20,11 +20,24 @@ func (it *IntegerType) End() token.Position {
 	return it.Pos.To(3) // length of `int`
 }
 
+type NegativeIntegerType struct {
+	Pos   token.Position
+	Token token.Token
+}
+
+func (nt *NegativeIntegerType) Start() token.Position {
+	return nt.Pos
+}
+
+func (nt *NegativeIntegerType) End() token.Position {
+	return nt.Pos.To(4) // length of `nint`
+}
+
 // IntegerLiteral represents the AST Node for an integer literal i.e 3
 type IntegerLiteral struct {
 	Pos     token.Position
 	Token   token.Token
-	Literal int
+	Literal int64
 }
 
 func (il *IntegerLiteral) Start() token.Position {

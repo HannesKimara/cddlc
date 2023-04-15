@@ -18,6 +18,9 @@ func (c *Comment) End() token.Position {
 	return c.Pos.To(len(c.Text))
 }
 
+func (c *Comment) cddlEntry()  {}
+func (c *Comment) groupEntry() {}
+
 // CommentGroup represents a sequence of comments with no empty lines
 type CommentGroup struct {
 	List []*Comment
@@ -47,3 +50,6 @@ func (cg *CommentGroup) End() token.Position {
 	}
 	return cg.List[len(cg.List)-1].End()
 }
+
+func (cg *CommentGroup) cddlEntry()  {}
+func (cg *CommentGroup) groupEntry() {}
