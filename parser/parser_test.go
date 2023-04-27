@@ -46,7 +46,7 @@ func testWalk(t *testing.T, valid, parsed ast.Node) {
 		*ast.IntegerType, *ast.NegativeIntegerType, *ast.TstrType, *ast.BstrType:
 
 		if !reflect.DeepEqual(valid, parsed) { // compare everything including position
-			t.Fatalf("expected nodes %T:%+v(valid) and %T%+v(parsed) to be equal", valid, valid, parsed, parsed)
+			t.Fatalf("expected nodes %T:%+v(valid) and %T:%+v(parsed) to be equal", valid, valid, parsed, parsed)
 			return
 		}
 
@@ -189,9 +189,9 @@ func TestParseIdentiferToTypeRule(t *testing.T) {
 		l := lexer.NewLexer([]byte(tst.src))
 		p := parser.NewParser(l)
 
-		parsed, _ := p.Parse()
-		if len(p.Errors()) != 0 {
-			t.Fatal(tst.src, ": -> ", p.Errors())
+		parsed, err := p.Parse()
+		if err != nil {
+			t.Fatal(tst.src, ": -> ", err)
 		}
 		testWalk(t, trueAst, parsed)
 	}
