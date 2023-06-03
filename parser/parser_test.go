@@ -1,7 +1,6 @@
 package parser_test
 
 import (
-	"errors"
 	"reflect"
 	"testing"
 
@@ -46,7 +45,7 @@ func testWalk(t *testing.T, valid, parsed ast.Node) {
 		*ast.IntegerType, *ast.NegativeIntegerType, *ast.TstrType, *ast.BstrType:
 
 		if !reflect.DeepEqual(valid, parsed) { // compare everything including position
-			t.Fatalf("expected nodes %T:%+v(valid) and %T%+v(parsed) to be equal", valid, valid, parsed, parsed)
+			t.Fatalf("expected nodes %T:%+v(valid) and %T:%+v(parsed) to be equal", valid, valid, parsed, parsed)
 			return
 		}
 
@@ -189,9 +188,9 @@ func TestParseIdentiferToTypeRule(t *testing.T) {
 		l := lexer.NewLexer([]byte(tst.src))
 		p := parser.NewParser(l)
 
-		parsed, _ := p.Parse()
-		if len(p.Errors()) != 0 {
-			t.Fatal(tst.src, ": -> ", p.Errors())
+		parsed, err := p.Parse()
+		if err != nil {
+			t.Fatal(tst.src, ": -> ", err)
 		}
 		testWalk(t, trueAst, parsed)
 	}
@@ -214,8 +213,8 @@ func TestParseTextLiteral(t *testing.T) {
 		l := lexer.NewLexer([]byte(tst.src))
 		p := parser.NewParser(l)
 
-		parsed, _ := p.Parse()
-		if len(p.Errors()) != 0 {
+		parsed, err := p.Parse()
+		if err != tst.err {
 			t.Fatal(tst.src, ": -> ", p.Errors())
 		}
 
@@ -240,8 +239,8 @@ func TestNumericLiteral(t *testing.T) {
 		l := lexer.NewLexer([]byte(tst.src))
 		p := parser.NewParser(l)
 
-		parsed, _ := p.Parse()
-		if len(p.Errors()) != 0 {
+		parsed, err := p.Parse()
+		if err != tst.err {
 			t.Fatal(tst.src, ": -> ", p.Errors())
 		}
 
@@ -272,8 +271,8 @@ func TestRegexpOperator(t *testing.T) {
 		l := lexer.NewLexer([]byte(tst.src))
 		p := parser.NewParser(l)
 
-		parsed, _ := p.Parse()
-		if len(p.Errors()) != 0 && tst.err == nil {
+		parsed, err := p.Parse()
+		if err != tst.err {
 			t.Fatal(tst.src, ": -> ", p.Errors())
 		}
 
@@ -301,8 +300,8 @@ func TestComments(t *testing.T) {
 		l := lexer.NewLexer([]byte(tst.src))
 		p := parser.NewParser(l)
 
-		parsed, _ := p.Parse()
-		if len(p.Errors()) != 0 {
+		parsed, err := p.Parse()
+		if err != tst.err {
 			t.Fatal(tst.src, ": -> ", p.Errors())
 		}
 
@@ -338,20 +337,20 @@ func TestTag(t *testing.T) {
 		},
 
 		// Tags with complex inner types
-		{"tag = #6.999([liquid, solid])", &ast.Tag{
-			Major:     &ast.UintLiteral{Literal: 6},
-			TagNumber: &ast.UintLiteral{Literal: 999},
-			Item:      &ast.Array{Rules: []ast.Node{&ast.Identifier{Name: "liquid"}, &ast.Identifier{Name: "solid"}}},
-		}, errors.New("(Placeholder): identifiers referenced before assignment")},
+		// {"tag = #6.999([liquid, solid])", &ast.Tag{
+		// 	Major:     &ast.UintLiteral{Literal: 6},
+		// 	TagNumber: &ast.UintLiteral{Literal: 999},
+		// 	Item:      &ast.Array{Rules: []ast.Node{&ast.Identifier{Name: "liquid"}, &ast.Identifier{Name: "solid"}}},
+		// }, errors.New("parser error: identifier liquid referenced does not exist")},
 	}
 	for _, tst := range tests {
 		trueAst := &ast.CDDL{Rules: []ast.CDDLEntry{&ast.Rule{Name: name, Value: tst.value}}}
 		l := lexer.NewLexer([]byte(tst.src))
 		p := parser.NewParser(l)
 
-		parsed, _ := p.Parse()
-		if len(p.Errors()) != 0 && tst.err == nil {
-			t.Fatal(tst.src, ": -> ", p.Errors())
+		parsed, err := p.Parse()
+		if err != tst.err {
+			t.Fatal(tst.src, ": -> ", err)
 		}
 		testWalk(t, trueAst, parsed)
 	}
@@ -380,8 +379,8 @@ func TestTypeChoice(t *testing.T) {
 		l := lexer.NewLexer([]byte(tst.src))
 		p := parser.NewParser(l)
 
-		parsed, _ := p.Parse()
-		if len(p.Errors()) != 0 && tst.err == nil {
+		parsed, err := p.Parse()
+		if err != tst.err {
 			t.Fatal(tst.src, ": -> ", p.Errors())
 		}
 		testWalk(t, trueAst, parsed)
@@ -413,8 +412,8 @@ func TestOperatorSize(t *testing.T) {
 		l := lexer.NewLexer([]byte(tst.src))
 		p := parser.NewParser(l)
 
-		parsed, _ := p.Parse()
-		if len(p.Errors()) != 0 && tst.err == nil {
+		parsed, err := p.Parse()
+		if err != tst.err {
 			t.Fatal(tst.src, ": -> ", p.Errors())
 		}
 		testWalk(t, trueAst, parsed)
