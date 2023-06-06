@@ -1,7 +1,12 @@
 package parser_test
 
 import (
+	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 
 	"github.com/flowfunction/cddl/ast"
@@ -37,6 +42,7 @@ func testWalk(t *testing.T, valid, parsed ast.Node) {
 			if p.TrailingComment != nil {
 				testWalk(t, val.TrailingComment, p.TrailingComment)
 			}
+			t.Logf("Valid: %T, Parsed: %T\n", valid, parsed)
 		} else {
 			t.Fatalf("expected node of type %T but found %T", valid, parsed)
 			return
@@ -127,9 +133,11 @@ func testWalk(t *testing.T, valid, parsed ast.Node) {
 			}
 		}
 	case *ast.Group:
-		if p, ok := parsed.(*ast.Group); ok && len(val.Rules) == len(p.Rules) {
-			for i := 0; i < len(val.Rules); i++ {
-				testWalk(t, val.Rules[i], p.Rules[i])
+		if p, ok := parsed.(*ast.Group); ok && len(val.Entries) == len(p.Entries) {
+			t.Logf("Valid: %T, Parsed: %T\n", valid, parsed)
+			t.Logf("Len valid: %d, Len parsed: %d", len(val.Entries), len(p.Entries))
+			for i := 0; i < len(val.Entries); i++ {
+				testWalk(t, val.Entries[i], p.Entries[i])
 			}
 		}
 	case *ast.TypeChoice:
@@ -147,6 +155,18 @@ func testWalk(t *testing.T, valid, parsed ast.Node) {
 		if p, ok := parsed.(*ast.Range); ok {
 			testWalk(t, val.From, p.From)
 			testWalk(t, val.To, p.To)
+		}
+	case *ast.Entry:
+		t.Logf("Valid: %T-%+v, Parsed: %T\n", valid, valid, parsed)
+		if p, ok := parsed.(*ast.Entry); ok {
+			testWalk(t, val.Name, p.Name)
+			testWalk(t, val.Value, p.Value)
+			if p.TrailingComment != nil {
+				testWalk(t, val.TrailingComment, p.TrailingComment)
+			}
+		} else {
+			t.Fatalf("expected node of type %T but found %T", valid, parsed)
+			return
 		}
 	default:
 		t.Fatalf("unknown node type %T", val)
@@ -280,7 +300,7 @@ func TestRegexpOperator(t *testing.T) {
 	}
 }
 
-func TestComments(t *testing.T) {
+func TestCommentGroups(t *testing.T) {
 	tests := []struct {
 		src   string
 		value *ast.CommentGroup
@@ -400,7 +420,7 @@ func TestOperatorSize(t *testing.T) {
 		{`item = bstr .size 4`, &ast.SizeOperatorControl{Type: &ast.BstrType{Pos: basePos, Token: token.BSTR}, Size: &ast.IntegerLiteral{Literal: 4}}, nil},
 		{`item = bstr .size (1..63)`, &ast.SizeOperatorControl{
 			Type: &ast.BstrType{Pos: basePos, Token: token.BSTR},
-			Size: &ast.Group{Rules: []ast.Node{
+			Size: &ast.Group{Entries: []ast.GroupEntry{
 				&ast.Range{From: &ast.IntegerLiteral{Literal: 1}, To: &ast.IntegerLiteral{Literal: 63}}},
 			},
 		}, nil},
@@ -417,5 +437,80 @@ func TestOperatorSize(t *testing.T) {
 			t.Fatal(tst.src, ": -> ", p.Errors())
 		}
 		testWalk(t, trueAst, parsed)
+	}
+}
+
+func TestParseGroup(t *testing.T) {
+	name := &ast.Identifier{Name: "item"}
+	basePos := token.Position{Offset: 7, Line: 1, Column: 8}
+	tests := []struct {
+		src   string
+		value ast.Node
+		err   error
+	}{
+		{`item = (name: tstr)`, &ast.Group{Pos: basePos, Entries: []ast.GroupEntry{
+			&ast.Entry{Name: &ast.Identifier{Name: "name"}, Value: &ast.TstrType{Pos: token.Position{Line: 1, Column: 15, Offset: 14}, Token: token.TSTR}},
+		}}, nil},
+	}
+
+	for _, tst := range tests {
+		trueAst := &ast.CDDL{Rules: []ast.CDDLEntry{&ast.Rule{Name: name, Value: tst.value}}}
+		l := lexer.NewLexer([]byte(tst.src))
+		p := parser.NewParser(l)
+
+		parsed, err := p.Parse()
+		if err != tst.err {
+			t.Fatal(tst.src, ": -> ", err)
+		}
+		testWalk(t, trueAst, parsed)
+	}
+}
+
+func rootDir() string {
+	_, b, _, _ := runtime.Caller(0)
+	d := path.Join(path.Dir(b))
+	return filepath.Dir(d)
+}
+
+func readSource(filename string) (src []byte, err error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	src, err = ioutil.ReadAll(f)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func TestLanguageFiles(t *testing.T) {
+	root := rootDir()
+	testData := filepath.Join(root, "testdata", "language")
+
+	files, err := ioutil.ReadDir(testData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".cddl" {
+			fp := filepath.Join(testData, file.Name())
+			t.Logf("Testing cddl file %s", fp)
+			src, err := readSource(fp)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			l := lexer.NewLexer(src)
+			p := parser.NewParser(l)
+
+			// Parse and check that no errors exists. TODO(HannesKimara): Verify that the source is parsed correctly into the tree
+			// or that the output cddl strictly describes an annotation data file.
+			_, err = p.Parse()
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
 	}
 }

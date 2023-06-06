@@ -86,7 +86,9 @@ func (p *Parser) Parse() (*ast.CDDL, error) {
 
 	for _, task := range p.tasks {
 		err := task() // TODO: Collect or channel errors
-		return cddl, err
+		if err != nil {
+			return cddl, err
+		}
 	}
 
 	return cddl, nil
@@ -138,7 +140,8 @@ func (p *Parser) parseRule() (_ ast.CDDLEntry, err error) {
 		if err != nil {
 			return rule, err
 		}
-		return comment.(ast.CDDLEntry), nil
+		cast := comment.(ast.CDDLEntry)
+		return cast, nil
 	case token.IDENT:
 
 	default:
@@ -188,7 +191,7 @@ func (p *Parser) parseRule() (_ ast.CDDLEntry, err error) {
 // TODO(HannesKimara): func(p *Parser) parseEntryShould(precedence, should ast.Node) (ast.Node, error)
 
 func (p *Parser) parseEntry(precedence int) (ast.Node, error) {
-	// TODO(HannesKimara): in error handling return a ast.BadNode that encapsulates the section when returning the error
+	// TODO(HannesKimara): in error handling return an ast.BadNode that encapsulates the section when returning the error
 	var exp ast.Node
 	if p.currToken == token.COMMENT { // TODO(HannesKimara): use this :- commentgroup, preceding and trailing comments
 		_, _ = p.parseComment()
@@ -338,7 +341,7 @@ func (p *Parser) parseColon(left ast.Node) (ast.Node, error) {
 		err := p.errorUnsupportedTypes(p.pos, p.currliteral, token.IDENT, token.INT)
 		return nil, err
 	}
-	rule := &ast.Rule{
+	rule := &ast.Entry{
 		Pos:  p.pos,
 		Name: ident,
 	}
@@ -573,12 +576,17 @@ func (p *Parser) parseGroup() (ast.Node, error) {
 	p.next()
 
 	for p.currToken != token.RPAREN {
-		rule, err := p.parseEntry(p.currToken.Precedence())
+		rawEntry, err := p.parseEntry(p.currToken.Precedence())
 		if err != nil {
 			return g, err
 		}
-		if rule != nil {
-			g.Rules = append(g.Rules, rule)
+		var entry ast.GroupEntry
+
+		if castRule, ok := rawEntry.(ast.GroupEntry); ok {
+			entry = castRule
+		}
+		if entry != nil {
+			g.Entries = append(g.Entries, entry)
 
 		}
 		p.next()
