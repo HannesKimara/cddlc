@@ -44,3 +44,15 @@ func (pos Position) To(offset int) Position {
 type PositionRange struct {
 	Start, End Position
 }
+
+func (ps *PositionRange) String() string {
+	start, trail := "", ""
+	if ps.Start.Line != ps.End.Line {
+		trail += fmt.Sprintf(" to line %d, column %d", ps.End.Line, ps.End.Column)
+	} else {
+		trail += fmt.Sprintf(" ~ %d", ps.End.Column)
+	}
+	start += fmt.Sprintf("line %d, column %d", ps.Start.Line, ps.Start.Column)
+
+	return start + trail
+}

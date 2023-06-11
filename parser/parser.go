@@ -7,16 +7,17 @@ import (
 	"strings"
 
 	"github.com/flowfunction/cddl/ast"
+	"github.com/flowfunction/cddl/errors"
 	"github.com/flowfunction/cddl/lexer"
 	"github.com/flowfunction/cddl/token"
 
 	env "github.com/flowfunction/cddl/environment"
 )
 
-type taskFn func() error
+type taskFn func() errors.Diagnostic
 
-type nudParseFn func() (ast.Node, error)
-type ledParseFn func(ast.Node) (ast.Node, error)
+type nudParseFn func() (ast.Node, errors.Diagnostic)
+type ledParseFn func(ast.Node) (ast.Node, errors.Diagnostic)
 
 // ParseConfig contains the configuration options for the parser. Passed on call to NewParser function.
 type Config struct{}
@@ -26,7 +27,7 @@ type Parser struct {
 	lexer *lexer.Lexer
 
 	// diagnostics contains the slice of errors and warnings in order
-	diagnostics []Diagnostic
+	errors ErrorList
 
 	// current position
 	pos token.Position
@@ -56,7 +57,10 @@ type Parser struct {
 	environment *env.Environment
 
 	// the error convenience function
-	error func(string, token.Position, token.Position) error
+	error func(string, token.Position, token.Position) errors.Diagnostic
+
+	// the error handling function
+	errorHandler func(err errors.Diagnostic)
 
 	// hold tasks to be run after the completed ast build.
 	// used mostly to check types in type specific operators that may not exist in the environment at first pass
@@ -64,7 +68,7 @@ type Parser struct {
 }
 
 // Parses the current file and build the AST from the top. Returns an instance reference of ast.CDDL.
-func (p *Parser) Parse() (*ast.CDDL, error) {
+func (p *Parser) ParseFile() (*ast.CDDL, ErrorList) {
 	cddl := &ast.CDDL{}
 	cddl.Rules = []ast.CDDLEntry{}
 
@@ -76,7 +80,7 @@ func (p *Parser) Parse() (*ast.CDDL, error) {
 	for p.currToken != token.EOF {
 		cddlEntry, err := p.parseRule()
 		if err != nil {
-			return cddl, err // TODO: Collect or channel errors
+			p.errorHandler(err)
 		}
 		if cddlEntry != nil {
 			cddl.Rules = append(cddl.Rules, cddlEntry)
@@ -85,23 +89,14 @@ func (p *Parser) Parse() (*ast.CDDL, error) {
 	}
 
 	for _, task := range p.tasks {
-		err := task() // TODO: Collect or channel errors
+		err := task()
 		if err != nil {
-			return cddl, err
+			p.errorHandler(err)
 		}
 	}
 
-	return cddl, nil
+	return cddl, p.errors.Collect()
 
-}
-
-func (p *Parser) expect(tok token.Token) bool {
-	if p.currToken != tok {
-		p.errorTokenExpected(p.pos, tok)
-		return false
-	}
-	p.next()
-	return true
 }
 
 func (p *Parser) expectPeek(tok token.Token) bool {
@@ -113,25 +108,11 @@ func (p *Parser) expectPeek(tok token.Token) bool {
 	return false
 }
 
-func (p *Parser) expectIntLiteral2() bool {
-	if p.peekToken != token.INT {
-		p.errorTokenExpected(p.peekPos, token.INT)
-		return false
-	}
-	if !p.peekToken.IsLiteral(p.peekLiteral) {
-		p.diagnostics = append(p.diagnostics, NewError("parser", fmt.Sprintf("expected integer literal at line %d column %d got `%s`", p.peekPos.Line, p.peekPos.Column, p.peekLiteral), p.pos, p.pos))
-		return false
-	}
-	p.next()
-
-	return true
+func (p *Parser) Errors() ErrorList {
+	return p.errors
 }
 
-func (p *Parser) Errors() []Diagnostic {
-	return p.diagnostics
-}
-
-func (p *Parser) parseRule() (_ ast.CDDLEntry, err error) {
+func (p *Parser) parseRule() (_ ast.CDDLEntry, err errors.Diagnostic) {
 	rule := &ast.Rule{}
 
 	switch p.currToken {
@@ -158,13 +139,16 @@ func (p *Parser) parseRule() (_ ast.CDDLEntry, err error) {
 	case token.ASSIGN:
 		p.next()
 		entry, err = p.parseEntry(p.currToken.Precedence())
+		if err != nil {
+			return rule, err
+		}
 		defer func() {
-			err := p.environment.Add(rule.Name.Name, &entry)
+			err := p.environment.Add(rule.Name.Name, entry)
 
 			// Since the only error returned is ErrSymbolExists, check for that and
 			// append a error that type is already decalred.
 			if err == env.ErrSymbolExists {
-				p.diagnostics = append(p.diagnostics, NewError("parser", fmt.Sprintf("identifier %s already declared", rule.Name.Name), p.pos, p.pos))
+				p.errors = append(p.errors, NewError(fmt.Sprintf("identifier %s already declared", rule.Name.Name), p.pos, p.pos))
 			}
 		}()
 
@@ -175,7 +159,7 @@ func (p *Parser) parseRule() (_ ast.CDDLEntry, err error) {
 			return rule, err
 		}
 	default:
-		return nil, NewError("parser", fmt.Sprintf("expected assigment operators =, /= or //= after identifer `%s`", rule.Name.Name), rule.Name.Pos, rule.Name.Pos)
+		return nil, p.error(fmt.Sprintf("expected assigment operators =, /= or //= after identifer `%s`", rule.Name.Name), rule.Name.Pos, rule.Name.Pos)
 	}
 	rule.Value = entry
 	if p.peekToken == token.COMMENT && isSameLineTokens(p.pos, p.peekPos) {
@@ -190,7 +174,7 @@ func (p *Parser) parseRule() (_ ast.CDDLEntry, err error) {
 // ParseEntryShould returns a parsed entry if of expected value else returns the error
 // TODO(HannesKimara): func(p *Parser) parseEntryShould(precedence, should ast.Node) (ast.Node, error)
 
-func (p *Parser) parseEntry(precedence int) (ast.Node, error) {
+func (p *Parser) parseEntry(precedence int) (ast.Node, errors.Diagnostic) {
 	// TODO(HannesKimara): in error handling return an ast.BadNode that encapsulates the section when returning the error
 	var exp ast.Node
 	if p.currToken == token.COMMENT { // TODO(HannesKimara): use this :- commentgroup, preceding and trailing comments
@@ -231,17 +215,17 @@ func (p *Parser) parseEntry(precedence int) (ast.Node, error) {
 	return exp, nil
 }
 
-func (p *Parser) parseIdentifier() (ast.Node, error) {
+func (p *Parser) parseIdentifier() (ast.Node, errors.Diagnostic) {
 	return &ast.Identifier{Pos: p.pos, Name: p.currliteral}, nil
 }
 
-func (p *Parser) parseNamedIdentifier() (ast.Node, error) {
+func (p *Parser) parseNamedIdentifier() (ast.Node, errors.Diagnostic) {
 	literal := p.currliteral
 	pos := p.pos
 	if literal[0] != '$' {
-		p.tasks = append(p.tasks, func() error {
+		p.tasks = append(p.tasks, func() errors.Diagnostic {
 			if !p.environment.Exists(literal) {
-				return NewError("parser", fmt.Sprintf("identifier %s referenced does not exist", literal), pos, pos)
+				return p.error(fmt.Sprintf("identifier %s referenced does not exist", literal), pos, pos)
 			}
 			return nil
 		})
@@ -250,46 +234,61 @@ func (p *Parser) parseNamedIdentifier() (ast.Node, error) {
 	return &ast.Identifier{Pos: p.pos, Name: p.currliteral}, nil
 }
 
-func (p *Parser) parseBooleanType() (ast.Node, error) {
+func (p *Parser) parseBooleanType() (ast.Node, errors.Diagnostic) {
 	ret := &ast.BooleanType{Pos: p.pos, Token: p.currToken}
 
 	return ret, nil
 }
 
-func (p *Parser) parseTstrType() (ast.Node, error) {
+func (p *Parser) parseBooleanLiteral() (ast.Node, errors.Diagnostic) {
+	switch p.currliteral {
+	case "true":
+		return &ast.BooleanLiteral{
+			Range: token.PositionRange{Start: p.pos, End: p.pos.To(3)},
+			Bool:  true,
+		}, nil
+	case "false":
+		return &ast.BooleanLiteral{
+			Range: token.PositionRange{Start: p.pos, End: p.pos.To(4)},
+			Bool:  false,
+		}, nil
+	}
+	return nil, p.error("unexpected literal "+p.currliteral, p.pos, p.pos)
+}
+
+func (p *Parser) parseTstrType() (ast.Node, errors.Diagnostic) {
 	return &ast.TstrType{Pos: p.pos, Token: p.currToken}, nil
 }
 
-func (p *Parser) parseFloatType() (ast.Node, error) {
+func (p *Parser) parseFloatType() (ast.Node, errors.Diagnostic) {
 	if p.currToken.IsLiteral(p.currliteral) {
 		return p.parseFloatLiteral()
 	}
 	return &ast.FloatType{Pos: p.pos, Token: p.currToken}, nil
 }
 
-func (p *Parser) parseFloatLiteral() (ast.Node, error) {
-	if p.currToken.IsLiteral(p.currliteral) {
-		lit, err := strconv.ParseFloat(p.currliteral, 64)
-		if err != nil {
-			return nil, p.errorTokenExpected(p.pos, token.FLOAT)
-		}
-		return &ast.FloatLiteral{
-			Pos:     p.pos,
-			Token:   p.currToken,
-			Literal: lit,
-		}, nil
+func (p *Parser) parseFloatLiteral() (ast.Node, errors.Diagnostic) {
+	lit, err := strconv.ParseFloat(p.currliteral, 64)
+	if err != nil {
+		return nil, p.errorTokenExpected(p.pos, token.FLOAT)
 	}
-	return nil, NewError("parser", "expected float literal", p.pos, p.pos)
+	return &ast.FloatLiteral{
+		Range:   token.PositionRange{Start: p.pos, End: p.pos.To(len(p.currliteral) - 1)},
+		Token:   p.currToken,
+		Literal: lit,
+	}, nil
 }
 
-func (p *Parser) parseUintType() (ast.Node, error) {
+func (p *Parser) parseUintType() (ast.Node, errors.Diagnostic) {
 	if p.currToken.IsLiteral(p.currliteral) {
 		return p.parseUintLiteral()
 	}
-	return &ast.UintType{Pos: p.pos, Token: p.currToken}, nil
+	return &ast.UintType{
+		Range: token.PositionRange{Start: p.pos, End: p.pos.To(4)},
+		Token: p.currToken}, nil
 }
 
-func (p *Parser) parseUintLiteral() (*ast.UintLiteral, error) {
+func (p *Parser) parseUintLiteral() (*ast.UintLiteral, errors.Diagnostic) {
 	if p.currToken.IsLiteral(p.currliteral) {
 		lit, err := strconv.ParseUint(p.currliteral, 0, 64)
 		if err != nil {
@@ -301,33 +300,33 @@ func (p *Parser) parseUintLiteral() (*ast.UintLiteral, error) {
 			Literal: lit,
 		}, nil
 	}
-	return nil, NewError("parser", "expected uint literal", p.pos, p.pos)
+	return nil, p.error("expected uint literal", p.pos, p.pos)
 }
 
-func (p *Parser) parseIntegerType() (ast.Node, error) {
+func (p *Parser) parseIntegerType() (ast.Node, errors.Diagnostic) {
 	if p.currToken.IsLiteral(p.currliteral) {
 		return p.parseIntegerLiteral()
 	}
 	return &ast.IntegerType{Pos: p.pos, Token: p.currToken}, nil
 }
 
-func (p *Parser) parseNegativeIntegerType() (ast.Node, error) {
+func (p *Parser) parseNegativeIntegerType() (ast.Node, errors.Diagnostic) {
 	return &ast.NegativeIntegerType{Pos: p.pos, Token: p.currToken}, nil
 }
-func (p *Parser) parseBstrType() (ast.Node, error) {
+func (p *Parser) parseBstrType() (ast.Node, errors.Diagnostic) {
 	return &ast.BstrType{Pos: p.pos, Token: p.currToken}, nil
 }
 
 // TODO: Consider joining bstr and bytes, to singular ast and parser
-func (p *Parser) parseBytesType() (ast.Node, error) {
+func (p *Parser) parseBytesType() (ast.Node, errors.Diagnostic) {
 	return &ast.BytesType{Pos: p.pos, Token: p.currToken}, nil
 }
 
-func (p *Parser) parseNullType() (ast.Node, error) {
+func (p *Parser) parseNullType() (ast.Node, errors.Diagnostic) {
 	return &ast.NullType{Pos: p.pos, Token: p.currToken}, nil
 }
 
-func (p *Parser) parseColon(left ast.Node) (ast.Node, error) {
+func (p *Parser) parseColon(left ast.Node) (ast.Node, errors.Diagnostic) {
 	var ident *ast.Identifier
 	switch val := left.(type) {
 	case *ast.Identifier:
@@ -360,11 +359,11 @@ func (p *Parser) parseColon(left ast.Node) (ast.Node, error) {
 	return rule, nil
 }
 
-func (p *Parser) parseComma(left ast.Node) (ast.Node, error) {
+func (p *Parser) parseComma(left ast.Node) (ast.Node, errors.Diagnostic) {
 	return left, nil
 }
 
-func (p *Parser) parseTypeChoice(left ast.Node) (ast.Node, error) {
+func (p *Parser) parseTypeChoice(left ast.Node) (ast.Node, errors.Diagnostic) {
 	tc := &ast.TypeChoice{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -379,7 +378,7 @@ func (p *Parser) parseTypeChoice(left ast.Node) (ast.Node, error) {
 	return tc, nil
 }
 
-func (p *Parser) parseUnwrap() (ast.Node, error) {
+func (p *Parser) parseUnwrap() (ast.Node, errors.Diagnostic) {
 	un := &ast.Unwrap{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -395,7 +394,7 @@ func (p *Parser) parseUnwrap() (ast.Node, error) {
 	return un, nil
 }
 
-func (p *Parser) parseTag() (ast.Node, error) {
+func (p *Parser) parseTag() (ast.Node, errors.Diagnostic) {
 	tagBase := &ast.Tag{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -406,7 +405,7 @@ func (p *Parser) parseTag() (ast.Node, error) {
 		p.next()
 		major, err := strconv.ParseUint(p.currliteral, 0, 64)
 		if err != nil {
-			return nil, NewError("parser", "failed to parse tag major", p.pos, p.pos)
+			return nil, p.error("failed to parse tag major", p.pos, p.pos)
 		}
 		tagBase.Major = &ast.UintLiteral{Literal: major}
 	case token.FLOAT:
@@ -431,7 +430,7 @@ func (p *Parser) parseTag() (ast.Node, error) {
 	return tagBase, nil
 }
 
-func (p *Parser) parseFloatTag() (*ast.Tag, error) {
+func (p *Parser) parseFloatTag() (*ast.Tag, errors.Diagnostic) {
 	tag := &ast.Tag{}
 	sections := strings.Split(p.currliteral, ".")
 	if len(sections) != 2 {
@@ -454,7 +453,7 @@ func (p *Parser) parseFloatTag() (*ast.Tag, error) {
 	return tag, nil
 }
 
-func (p *Parser) parseOptional() (ast.Node, error) {
+func (p *Parser) parseOptional() (ast.Node, errors.Diagnostic) {
 	tc := &ast.Optional{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -470,7 +469,7 @@ func (p *Parser) parseOptional() (ast.Node, error) {
 	return tc, nil
 }
 
-func (p *Parser) parseZMOccurrence() (ast.Node, error) {
+func (p *Parser) parseZMOccurrence() (ast.Node, errors.Diagnostic) {
 	tc := &ast.NMOccurrence{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -486,7 +485,7 @@ func (p *Parser) parseZMOccurrence() (ast.Node, error) {
 	return tc, nil
 }
 
-func (p *Parser) parseOMOccurrence() (ast.Node, error) {
+func (p *Parser) parseOMOccurrence() (ast.Node, errors.Diagnostic) {
 	tc := &ast.NMOccurrence{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -501,7 +500,7 @@ func (p *Parser) parseOMOccurrence() (ast.Node, error) {
 	return tc, nil
 }
 
-func (p *Parser) parseSizeOperator(left ast.Node) (ast.Node, error) {
+func (p *Parser) parseSizeOperator(left ast.Node) (ast.Node, errors.Diagnostic) {
 	sop := &ast.SizeOperatorControl{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -527,7 +526,7 @@ func (p *Parser) parseSizeOperator(left ast.Node) (ast.Node, error) {
 
 // TODO :: Evaluate that the regex is valid and compiles according to
 // https://www.rfc-editor.org/rfc/rfc8610#section-3.8.3
-func (p *Parser) parseRegexp(left ast.Node) (ast.Node, error) {
+func (p *Parser) parseRegexp(left ast.Node) (ast.Node, errors.Diagnostic) {
 	var base *ast.TstrType
 	if b, ok := left.(*ast.TstrType); ok {
 		base = b
@@ -551,7 +550,7 @@ func (p *Parser) parseRegexp(left ast.Node) (ast.Node, error) {
 	return r, nil
 }
 
-func (p *Parser) parseIntegerLiteral() (*ast.IntegerLiteral, error) {
+func (p *Parser) parseIntegerLiteral() (*ast.IntegerLiteral, errors.Diagnostic) {
 	if p.currToken.IsLiteral(p.currliteral) {
 		lit, err := strconv.ParseInt(p.currliteral, 0, 64)
 		if err != nil {
@@ -563,14 +562,14 @@ func (p *Parser) parseIntegerLiteral() (*ast.IntegerLiteral, error) {
 			Literal: lit,
 		}, nil
 	}
-	return nil, NewError("parser", "expected integer literal", p.pos, p.pos)
+	return nil, p.error("expected integer literal", p.pos, p.pos)
 }
 
-func (p *Parser) parseTextLiteral() (ast.Node, error) {
+func (p *Parser) parseTextLiteral() (ast.Node, errors.Diagnostic) {
 	return &ast.TextLiteral{Pos: p.pos, Token: p.currToken, Literal: p.currliteral}, nil
 }
 
-func (p *Parser) parseGroup() (ast.Node, error) {
+func (p *Parser) parseGroup() (ast.Node, errors.Diagnostic) {
 	g := &ast.Group{}
 	g.Pos = p.pos
 	p.next()
@@ -598,7 +597,7 @@ func isSameLineTokens(tok1, tok2 token.Position) bool {
 	return tok1.Line == tok2.Line
 }
 
-func (p *Parser) parseMap() (ast.Node, error) {
+func (p *Parser) parseMap() (ast.Node, errors.Diagnostic) {
 	g := &ast.Map{}
 	g.Pos = p.pos
 	p.next()
@@ -616,7 +615,7 @@ func (p *Parser) parseMap() (ast.Node, error) {
 	return g, nil
 }
 
-func (p *Parser) parseArray() (ast.Node, error) {
+func (p *Parser) parseArray() (ast.Node, errors.Diagnostic) {
 	arr := &ast.Array{}
 	arr.Pos = p.pos
 	p.next()
@@ -635,11 +634,11 @@ func (p *Parser) parseArray() (ast.Node, error) {
 	return arr, nil
 }
 
-func (p *Parser) parseComment() (ast.Node, error) {
+func (p *Parser) parseComment() (ast.Node, errors.Diagnostic) {
 	cg := &ast.CommentGroup{}
 	cg.List = append(cg.List, &ast.Comment{Pos: p.pos, Text: p.currliteral})
 
-	for p.peekToken == token.COMMENT && p.peekPos.Line == (p.pos.Line+1) {
+	for p.peekToken == token.COMMENT {
 		p.next()
 		cg.List = append(cg.List, p.parseInnerComment())
 	}
@@ -658,7 +657,7 @@ func (p *Parser) parseInnerComment() *ast.Comment {
 	return comment
 }
 
-func (p *Parser) parseComparatorOp(left ast.Node) (ast.Node, error) {
+func (p *Parser) parseComparatorOp(left ast.Node) (ast.Node, errors.Diagnostic) {
 	var leftI *ast.IntegerType
 
 	switch left.(type) {
@@ -687,7 +686,7 @@ func (p *Parser) parseComparatorOp(left ast.Node) (ast.Node, error) {
 	return op, nil
 }
 
-func (p *Parser) parseBound(left ast.Node) (bound ast.Node, err error) {
+func (p *Parser) parseBound(left ast.Node) (bound ast.Node, err errors.Diagnostic) {
 	bound = &ast.Range{}
 
 	switch val := left.(type) {
@@ -701,7 +700,7 @@ func (p *Parser) parseBound(left ast.Node) (bound ast.Node, err error) {
 	return bound, err
 }
 
-func (p *Parser) parseOccurrence(left ast.Node) (ast.Node, error) {
+func (p *Parser) parseOccurrence(left ast.Node) (ast.Node, errors.Diagnostic) {
 	occ := &ast.NMOccurrence{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -737,7 +736,7 @@ func (p *Parser) parseOccurrence(left ast.Node) (ast.Node, error) {
 	return occ, nil
 }
 
-func (p *Parser) parseIdentBound(left *ast.Identifier) (*ast.Range, error) {
+func (p *Parser) parseIdentBound(left *ast.Identifier) (*ast.Range, errors.Diagnostic) {
 	b := &ast.Range{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -751,15 +750,15 @@ func (p *Parser) parseIdentBound(left *ast.Identifier) (*ast.Range, error) {
 	}
 	b.To = to
 
-	p.tasks = append(p.tasks, func() error {
+	p.tasks = append(p.tasks, func() errors.Diagnostic {
 		valLeft := p.environment.Get(left.Name)
 		to := b.To
 		switch val := to.(type) {
 		case *ast.Identifier:
 			valRight := p.environment.Get(val.Name)
 			if !(reflect.TypeOf(valLeft) == reflect.TypeOf(valRight)) {
-				return NewError("parser",
-					fmt.Sprintf("operator %s expected same type min, max values. The values of %s and %s resolve to %+v and %+v", b.Token, left.Name, val.Name, *valLeft, valRight),
+				return p.error(
+					fmt.Sprintf("operator %s expected same type min, max values. The values of %s and %s resolve to %+v and %+v", b.Token, left.Name, val.Name, valLeft, valRight),
 					left.Pos, val.Pos)
 			}
 		}
@@ -767,7 +766,7 @@ func (p *Parser) parseIdentBound(left *ast.Identifier) (*ast.Range, error) {
 	})
 	return b, nil
 }
-func (p *Parser) parseIntBound(left *ast.IntegerLiteral) (*ast.Range, error) {
+func (p *Parser) parseIntBound(left *ast.IntegerLiteral) (*ast.Range, errors.Diagnostic) {
 	b := &ast.Range{
 		Pos:   p.pos,
 		Token: p.currToken,
@@ -782,22 +781,45 @@ func (p *Parser) parseIntBound(left *ast.IntegerLiteral) (*ast.Range, error) {
 	switch right := to.(type) {
 	case *ast.IntegerLiteral:
 		b.To = right
+	case *ast.FloatLiteral:
+		malformed := &ast.BadNode{Pos: right.Start(), Token: right.Token, Base: right, EndPos: right.End()}
+		b.To = malformed
+		return b, p.error("cannot use float literal as upper bound to int range", right.Start(), right.End())
 	case *ast.Identifier:
+		b.To = right
+		ident := right.Name
+		identStart := right.Start()
+		identEnd := right.End()
 
+		p.tasks = append(p.tasks, func() errors.Diagnostic {
+			if !p.environment.Exists(right.Name) {
+				return p.error(fmt.Sprintf("identifier %s referenced does not exist", ident), identStart, identEnd)
+			}
+			val := p.environment.Get(ident)
+			switch val.(type) {
+			case *ast.IntegerLiteral:
+				// pass
+			case *ast.FloatLiteral:
+				return p.error("cannot use float literal as upper bound to int range", identStart, identEnd)
+			default:
+				return p.error("expected integer upper bound", identStart, identEnd)
+			}
+			return nil
+		})
 	}
 
 	return b, nil
 }
 
-func (p *Parser) parseFloatBound(left *ast.FloatLiteral) (*ast.Range, error) {
+func (p *Parser) parseFloatBound(left *ast.FloatLiteral) (*ast.Range, errors.Diagnostic) {
 	return nil, nil
 }
 
-func (p *Parser) errorUnsupportedType(pos token.Position, operator string, supported token.Token) error {
-	return NewError("parser", fmt.Sprintf("operator %s only supports token %s", operator, supported), pos, pos)
+func (p *Parser) errorUnsupportedType(pos token.Position, operator string, supported token.Token) errors.Diagnostic {
+	return p.error(fmt.Sprintf("operator %s only supports token %s", operator, supported), pos, pos)
 }
 
-func (p *Parser) errorUnsupportedTypes(pos token.Position, operator string, supported ...token.Token) error {
+func (p *Parser) errorUnsupportedTypes(pos token.Position, operator string, supported ...token.Token) errors.Diagnostic {
 	toks := []string{}
 	if len(supported) == 0 {
 		panic("parser internal error: construction of unsupportedTypes error with no supported alternatives")
@@ -805,15 +827,15 @@ func (p *Parser) errorUnsupportedTypes(pos token.Position, operator string, supp
 	for _, tok := range supported {
 		toks = append(toks, tok.String())
 	}
-	return NewError("parser", fmt.Sprintf("operator %s only supports tokens %s", operator, strings.Join(toks, ", ")), pos, pos)
+	return p.error(fmt.Sprintf("operator %s only supports tokens %s", operator, strings.Join(toks, ", ")), pos, pos)
 }
 
-func (p *Parser) errorTokenExpected(pos token.Position, tok token.Token) error {
-	return NewError("parser", fmt.Sprintf("expected %s at line %d, column %d", tok.String(), pos.Line, pos.Column), pos, pos)
+func (p *Parser) errorTokenExpected(pos token.Position, tok token.Token) errors.Diagnostic {
+	return p.error(fmt.Sprintf("expected %s at line %d, column %d", tok.String(), pos.Line, pos.Column), pos, pos)
 }
 
-func (p *Parser) errorUnexpectedPrefix(pos token.Position, tok token.Token) error {
-	return NewError("parser", fmt.Sprintf("unexpected token %s at line %d, column %d", tok.String(), pos.Line, pos.Column), pos, pos)
+func (p *Parser) errorUnexpectedPrefix(pos token.Position, tok token.Token) errors.Diagnostic {
+	return p.error(fmt.Sprintf("unexpected token %s at line %d, column %d", tok.String(), pos.Line, pos.Column), pos, pos)
 }
 
 func (p *Parser) next() {
@@ -838,13 +860,21 @@ func NewParser(lexer *lexer.Lexer, opts ...Config) *Parser {
 	p.leds = make(map[token.Token]ledParseFn)
 
 	p.environment = env.NewEnvironment()
-	p.error = func(msg string, start, end token.Position) error {
-		return NewError("parser", msg, start, end)
+	p.error = func(msg string, start, end token.Position) errors.Diagnostic {
+		return NewError(msg, start, end)
+	}
+	p.errorHandler = func(err errors.Diagnostic) {
+		if err == nil {
+			return
+		}
+		p.errors = append(p.errors, err)
 	}
 
 	// Register token handlers
 	p.registerNud(token.IDENT, p.parseNamedIdentifier)
 	p.registerNud(token.BOOL, p.parseBooleanType)
+	p.registerNud(token.FALSE, p.parseBooleanLiteral)
+	p.registerNud(token.TRUE, p.parseBooleanLiteral)
 	p.registerNud(token.TSTR, p.parseTstrType)
 	p.registerNud(token.TEXT, p.parseTstrType)
 	p.registerNud(token.TEXT_LITERAL, p.parseTextLiteral)

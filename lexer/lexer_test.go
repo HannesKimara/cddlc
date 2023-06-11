@@ -1,10 +1,21 @@
 package lexer_test
 
 import (
+	"bufio"
+	"fmt"
+	"math"
+	"math/rand"
+	"os"
+	"path"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/flowfunction/cddl/lexer"
 	"github.com/flowfunction/cddl/token"
+	"github.com/google/uuid"
 )
 
 func ScanAll(lex *lexer.Lexer) []lexer.TokenSer {
@@ -121,4 +132,199 @@ func TestNumbers(t *testing.T) {
 		}
 	}
 
+}
+
+var seed int64
+
+func rootDir() string {
+	_, b, _, _ := runtime.Caller(0)
+	d := path.Join(path.Dir(b))
+	return filepath.Dir(d)
+}
+
+var fuzzRuns uint = 1000
+var maxGenTokens uint = 10
+var maxGenStringLen uint = 50
+
+func init() {
+	seed = time.Now().UnixNano()
+	rand.Seed(seed)
+}
+
+type Source struct {
+	source []string
+	tokens []token.Token
+	pos    []token.Position
+
+	ix uint
+}
+
+func (s *Source) Source() string {
+	return strings.Join(s.source, " ")
+}
+
+func (s *Source) String() string {
+	src := ""
+	if len(s.source)+len(s.tokens) == 2*len(s.pos) { // check all slices are of equal length
+		for i := 0; i < len(s.source); i++ {
+			src += fmt.Sprintf("%s: %s -> %s\n", s.pos[i], s.tokens[i], s.source[i])
+		}
+	}
+	return src
+}
+
+func (s *Source) Scan() (token.Token, token.Position, string) {
+	tok := s.tokens[s.ix]
+	lit := strings.TrimSuffix(s.source[s.ix], " ")
+	pos := s.pos[s.ix]
+
+	if int(s.ix) < len(s.tokens)-1 {
+		s.ix += 1
+	}
+	return tok, pos, lit
+}
+
+func posFromOffset(offset int) token.Position {
+	return token.Position{
+		Filename: "",
+		Offset:   offset,
+		Line:     1,
+		Column:   offset + 1,
+	}
+}
+
+func genText() string {
+	src := []rune{}
+	for i := 0; i < int(maxGenStringLen); i++ {
+		char := rune(rand.Int31n(90) + 35)
+		src = append(src, char)
+	}
+
+	return string(src)
+}
+
+func genLiteral(t token.Token) (string, token.Token) {
+	switch t {
+	case token.INT:
+		return fmt.Sprintf("%d", rand.Intn(math.MaxInt32)), t
+	// case token.UINT:
+	// 	return fmt.Sprintf("%d", rand.Uint64()), t
+	case token.FLOAT, token.FLOAT16, token.FLOAT32, token.FLOAT64: // TODO: differentiate these
+		return fmt.Sprintf("%f", rand.Float64()*math.MaxInt64), token.FLOAT
+	case token.TEXT_LITERAL:
+		return `"` + genText() + `"`, t
+	}
+	return t.String(), t
+}
+
+func genSource() *Source {
+	src := []string{}
+	toks := []token.Token{}
+	pos := []token.Position{}
+	offset := 0
+	rangeTokens := int(token.FEATURE - token.IDENT)
+
+	for i := 0; i < int(maxGenTokens); i++ {
+		tok := rand.Intn(rangeTokens) + int(token.IDENT)
+		var tokn token.Token = token.Token(tok)
+		if strings.HasPrefix(tokn.String(), "INTERNAL_MARKER") {
+			tokn = token.CBORSEQ // arbitrary replacement of internal markers
+		}
+
+		literal, token := genLiteral(tokn)
+		src = append(src, literal)
+		toks = append(toks, token)
+		pos = append(pos, posFromOffset(offset))
+		offset += len(literal + " ")
+	}
+	return &Source{
+		ix:     0,
+		source: src,
+		tokens: toks,
+		pos:    pos,
+	}
+}
+
+type failStore struct {
+	fd *os.File
+	bw *bufio.Writer
+}
+
+func (fs *failStore) Store(src string) error {
+	_, err := fs.bw.WriteString(src)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (fs *failStore) Close() error {
+	err := fs.bw.Flush()
+	if err != nil {
+		return err
+	}
+	return fs.fd.Close()
+}
+
+func NewFailStore(fp string) (*failStore, error) {
+	fd, err := os.OpenFile(fp, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	if err != nil {
+		return nil, err
+	}
+	bw := bufio.NewWriter(fd)
+	bw.WriteString(fmt.Sprintf("Seed: %d\n\n", seed))
+	bw.Flush()
+	return &failStore{fd: fd, bw: bw}, nil
+}
+
+func assert[T comparable](t *testing.T, expected, got T) {
+	if expected != got {
+		t.Logf("\nFAIL: expected %+v, got %+v (%T)\n", expected, got, expected)
+		t.Fail()
+		return
+	}
+}
+
+func TestLexerFuzz(t *testing.T) {
+	fs, err := NewFailStore(filepath.Join(rootDir(), "artifacts", uuid.New().String()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fs.Close()
+
+	for i := 0; i < int(fuzzRuns); i += 1 {
+		source := genSource()
+		lex := lexer.NewLexer([]byte(source.Source()))
+
+		t.Run(fmt.Sprintf("Source: %d", i+1), func(t *testing.T) {
+			for {
+				tok, pos, lit := lex.Scan()
+				// HACK
+				if tok == token.TEXT_LITERAL {
+					lit = `"` + lit + `"`
+				}
+
+				if tok == token.EOF {
+					break
+				}
+				exTok, exPos, exLit := source.Scan()
+
+				assert[token.Token](t, exTok, tok)
+				assert[token.Position](t, exPos, pos)
+				assert[string](t, exLit, lit)
+			}
+			if t.Failed() {
+				fs.Store("\nFuzz Test: " + t.Name() + "\n")
+				fs.Store(strings.Repeat("-", 90))
+				fs.Store(fmt.Sprintf("\nSource: %s\n", source.Source()))
+				if len(lex.Errors) > 0 {
+					fs.Store("Lexer Errors: ")
+					for _, err := range lex.Errors {
+						fs.Store(fmt.Sprintf("\t%s -> %s\n", err.Pos, err.Msg))
+					}
+				}
+			}
+		})
+	}
 }
