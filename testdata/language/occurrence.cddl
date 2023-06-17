@@ -1,0 +1,6 @@
+apartment = {
+    kitchen: size,
+    * bedroom: size,
+}
+
+size = float

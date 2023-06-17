@@ -148,7 +148,8 @@ func (p *Parser) parseRule() (_ ast.CDDLEntry, err errors.Diagnostic) {
 			// Since the only error returned is ErrSymbolExists, check for that and
 			// append a error that type is already decalred.
 			if err == env.ErrSymbolExists {
-				p.errors = append(p.errors, NewError(fmt.Sprintf("identifier %s already declared", rule.Name.Name), p.pos, p.pos))
+				val := p.environment.Get(rule.Name.Name)
+				p.errors = append(p.errors, NewError(fmt.Sprintf("existing declaration for identifier %s at line %d, column %d", rule.Name.Name, val.Start().Line, val.Start().Column), rule.Name.Pos, rule.Name.Pos))
 			}
 		}()
 
@@ -189,14 +190,13 @@ func (p *Parser) parseEntry(precedence int) (ast.Node, errors.Diagnostic) {
 		err := p.errorUnexpectedPrefix(p.pos, p.currToken)
 		return nil, err
 	}
-	if p.currToken == token.ONE_OR_MORE || p.currToken == token.ZERO_OR_MORE {
-		exp = &ast.UintLiteral{Pos: p.pos, Literal: 0}
-	} else {
-		expR, err := nudFn()
-		exp = expR
-		if err != nil {
-			return exp, err
-		}
+	// if p.currToken == token.ONE_OR_MORE || p.currToken == token.ZERO_OR_MORE {
+	// 	exp = &ast.UintLiteral{Pos: p.pos, Literal: 0}
+	// }
+	expR, err := nudFn()
+	exp = expR
+	if err != nil {
+		return exp, err
 	}
 
 	for p.currToken != token.COMMA && precedence < p.peekToken.Precedence() {
@@ -370,12 +370,28 @@ func (p *Parser) parseTypeChoice(left ast.Node) (ast.Node, errors.Diagnostic) {
 		First: left,
 	}
 	p.next()
-	sec, err := p.parseEntry(p.currToken.Precedence())
+	sec, err := p.parseEntry(p.currToken.Precedence()) // TODO: Check is type
 	if err != nil {
 		return sec, err
 	}
 	tc.Second = sec
 	return tc, nil
+}
+
+func (p *Parser) parseGroupChoice(left ast.Node) (ast.Node, errors.Diagnostic) {
+	gc := &ast.TypeChoice{
+		Pos:   p.pos,
+		Token: p.currToken,
+		First: left,
+	}
+	p.next()
+	sec, err := p.parseEntry(p.currToken.Precedence()) // TODO: Check is group
+	if err != nil {
+		return sec, err
+	}
+
+	gc.Second = sec
+	return gc, nil
 }
 
 func (p *Parser) parseUnwrap() (ast.Node, errors.Diagnostic) {
@@ -470,34 +486,25 @@ func (p *Parser) parseOptional() (ast.Node, errors.Diagnostic) {
 }
 
 func (p *Parser) parseZMOccurrence() (ast.Node, errors.Diagnostic) {
-	tc := &ast.NMOccurrence{
-		Pos:   p.pos,
-		Token: p.currToken,
-		N:     &ast.UintLiteral{Literal: 0},
+	left := &ast.UintLiteral{
+		Pos:     p.pos,
+		Token:   token.UINT,
+		Literal: 0,
 	}
 
-	item, err := p.parseEntry(p.currToken.Precedence())
-	if err != nil {
-		return item, err
-	}
-
-	tc.Item = item
-	return tc, nil
+	occ, err := p.parseOccurrence(left)
+	return occ, err
 }
 
 func (p *Parser) parseOMOccurrence() (ast.Node, errors.Diagnostic) {
-	tc := &ast.NMOccurrence{
-		Pos:   p.pos,
-		Token: p.currToken,
-		N:     &ast.UintLiteral{Literal: 1},
+	left := &ast.UintLiteral{
+		Pos:     p.pos,
+		Token:   token.UINT,
+		Literal: 1,
 	}
 
-	item, err := p.parseEntry(p.currToken.Precedence())
-	if err != nil {
-		return tc, err
-	}
-	tc.Item = item
-	return tc, nil
+	occ, err := p.parseOccurrence(left)
+	return occ, err
 }
 
 func (p *Parser) parseSizeOperator(left ast.Node) (ast.Node, errors.Diagnostic) {
@@ -705,13 +712,25 @@ func (p *Parser) parseOccurrence(left ast.Node) (ast.Node, errors.Diagnostic) {
 		Pos:   p.pos,
 		Token: p.currToken,
 	}
-	var right *ast.UintLiteral
+	var right, leftU *ast.UintLiteral
 
-	leftU, ok := left.(*ast.UintLiteral)
-	if !ok {
-		return nil, p.errorUnsupportedType(left.Start(), p.currliteral, token.UINT)
+	switch val := left.(type) {
+	case *ast.UintLiteral:
+		leftU = val
+	case *ast.IntegerLiteral:
+		if val.Literal < 0 {
+			return nil, p.error(fmt.Sprintf("Lower bound %d to occurrence operator %s should not be less than zero", val.Literal, occ.Token), val.Start(), val.End())
+		}
+		leftU = &ast.UintLiteral{
+			Pos:     val.Pos,
+			Token:   token.UINT,
+			Literal: uint64(val.Literal),
+		}
+	default:
+		return nil, p.error(fmt.Sprintf("unexpected lower bound type for operator %s, should be uint", occ.Token), left.Start(), left.End())
 	}
-	if p.peekToken == token.UINT && p.peekToken.IsLiteral(p.peekLiteral) {
+
+	if p.peekToken == token.INT && p.peekToken.IsLiteral(p.peekLiteral) {
 		p.next()
 		rightN, err := p.parseUintType()
 		if err != nil {
@@ -766,6 +785,7 @@ func (p *Parser) parseIdentBound(left *ast.Identifier) (*ast.Range, errors.Diagn
 	})
 	return b, nil
 }
+
 func (p *Parser) parseIntBound(left *ast.IntegerLiteral) (*ast.Range, errors.Diagnostic) {
 	b := &ast.Range{
 		Pos:   p.pos,
@@ -901,6 +921,7 @@ func NewParser(lexer *lexer.Lexer, opts ...Config) *Parser {
 
 	p.leds[token.COLON] = p.parseColon
 	p.leds[token.TYPE_CHOICE] = p.parseTypeChoice
+	p.leds[token.GROUP_CHOICE] = p.parseGroupChoice
 
 	// Comparable control operators
 	for _, tok := range []token.Token{token.LT, token.LE, token.GT, token.GE, token.EQ, token.NE} {
@@ -909,7 +930,6 @@ func NewParser(lexer *lexer.Lexer, opts ...Config) *Parser {
 
 	p.leds[token.SIZE] = p.parseSizeOperator
 	p.leds[token.REGEXP] = p.parseRegexp
-
 	p.leds[token.INCLUSIVE_BOUND] = p.parseBound
 	p.leds[token.EXCLUSIVE_BOUND] = p.parseBound
 	p.leds[token.ZERO_OR_MORE] = p.parseOccurrence
