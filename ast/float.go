@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/flowfunction/cddl/token"
 )
 
@@ -23,15 +21,15 @@ func (ft *FloatType) End() token.Position {
 
 // FloatLiteral represesnts the AST Node for float type token i.e. 3.412
 type FloatLiteral struct {
-	Pos     token.Position
+	Range   token.PositionRange
 	Token   token.Token
 	Literal float64
 }
 
 func (fl *FloatLiteral) Start() token.Position {
-	return fl.Pos
+	return fl.Range.Start
 }
 
 func (fl *FloatLiteral) End() token.Position {
-	return fl.Pos.To(len(fmt.Sprintf("%f", fl.Literal)))
+	return fl.Range.End
 }

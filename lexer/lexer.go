@@ -117,6 +117,8 @@ func (l *Lexer) Scan() (tok token.Token, pos token.Position, lit string) {
 			tok = token.RIGHT_ANGLE_BRACKET
 		case '#':
 			tok = token.HASH
+		case '~':
+			tok = token.UNWRAP
 		case '=':
 			if l.chr == '>' {
 				l.next()
@@ -127,14 +129,14 @@ func (l *Lexer) Scan() (tok token.Token, pos token.Position, lit string) {
 			}
 		case ',':
 			tok = token.COMMA
-		case '$':
-			if l.chr == '$' {
-				l.next()
-				tok = token.GROUP_SOCKET
-				lit = "&&"
-			} else {
-				tok = token.TYPE_SOCKET
-			}
+		// case '$': // TODO: Never reached since these are valif identififer start characters
+		// 	if l.chr == '$' {
+		// 		l.next()
+		// 		tok = token.GROUP_SOCKET
+		// 		lit = "&&"
+		// 	} else {
+		// 		tok = token.TYPE_SOCKET
+		// 	}
 		case '&':
 			tok = token.AMPERSAND
 		case '/':

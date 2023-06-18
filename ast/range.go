@@ -19,3 +19,5 @@ func (r *Range) End() token.Position {
 	// Assuming token is either .. or ... the statement yields (2 + 0) or (2 +1)
 	return r.To.End()
 }
+
+func (r *Range) groupEntry() {}

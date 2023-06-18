@@ -1,0 +1,5 @@
+person = {(
+    age: int,
+    name: tstr,
+    employer: tstr,
+)}

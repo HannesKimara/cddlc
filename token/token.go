@@ -86,8 +86,8 @@ const (
 	INCLUSIVE_BOUND // ..
 	EXCLUSIVE_BOUND // ...
 
-	TYPE_SOCKET  // $
-	GROUP_SOCKET // $$
+	// TYPE_SOCKET  // $
+	// GROUP_SOCKET // $$
 
 	ZERO_OR_MORE // *
 	ONE_OR_MORE  // +
@@ -192,8 +192,8 @@ var tokens = [...]string{
 	INCLUSIVE_BOUND: "..",
 	EXCLUSIVE_BOUND: "...",
 
-	TYPE_SOCKET:  "$",
-	GROUP_SOCKET: "$$",
+	// TYPE_SOCKET:  "$",
+	// GROUP_SOCKET: "$$",
 
 	ZERO_OR_MORE: "*",
 	ONE_OR_MORE:  "+",
@@ -224,8 +224,16 @@ var tokens = [...]string{
 	FEATURE: ".feature",
 
 	// Parser specific tokens
-	UNEXPECTED: "UNEXPECTED",
-	EOL:        "EOL",
+	UNEXPECTED:              "UNEXPECTED",
+	EOL:                     "EOL",
+	numeric_begin:           "INTERNAL_MARKER_numeric_begin",
+	numeric_end:             "INTERNAL_MARKER_numeric_end",
+	literal_begin:           "INTERNAL_MARKER_literal_begin",
+	literal_end:             "INTERNAL_MARKER_literal_end",
+	operator_begin:          "INTERNAL_MARKER_operator_begin",
+	operator_end:            "INTERNAL_MARKER_operator_end",
+	control_operators_begin: "INTERNAL_MARKER_control_operators_begin",
+	control_operators_end:   "INTERNAL_MARKER_control_operators_end",
 }
 
 func (t Token) String() string {

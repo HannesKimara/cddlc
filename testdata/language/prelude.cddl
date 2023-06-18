@@ -1,0 +1,10 @@
+isBool = bool
+isUint = uint
+isNint = nint
+isInt = int
+isFloat16 = float16
+isFloat32 = float32
+isFloat64 = float64
+isFloat = float
+isBstr = bstr / bytes
+isText = tstr / text

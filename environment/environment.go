@@ -11,11 +11,11 @@ var (
 )
 
 type Environment struct {
-	symbols map[string]*ast.Node
+	symbols map[string]ast.Node
 }
 
 // Add a new symbol to the symbol table with a pointer to its Node
-func (e *Environment) Add(ident string, value *ast.Node) error {
+func (e *Environment) Add(ident string, value ast.Node) error {
 	if e.Exists(ident) {
 		return ErrSymbolExists
 	}
@@ -29,7 +29,7 @@ func (e *Environment) Exists(ident string) bool {
 	return ok
 }
 
-func (e *Environment) Get(ident string) *ast.Node {
+func (e *Environment) Get(ident string) ast.Node {
 	if e.Exists(ident) {
 		return e.symbols[ident]
 	}
@@ -39,6 +39,6 @@ func (e *Environment) Get(ident string) *ast.Node {
 // NewEnvironment returns a new Environment
 func NewEnvironment() *Environment {
 	return &Environment{
-		symbols: make(map[string]*ast.Node),
+		symbols: make(map[string]ast.Node),
 	}
 }

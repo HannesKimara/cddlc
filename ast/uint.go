@@ -4,14 +4,14 @@ import "github.com/flowfunction/cddl/token"
 
 // UintType represents the AST Node for `uint` data definition type
 type UintType struct {
-	Pos   token.Position
+	Range token.PositionRange
 	Token token.Token
 }
 
 func (ut *UintType) Start() token.Position {
-	return ut.Pos
+	return ut.Range.Start
 }
 
 func (ut *UintType) End() token.Position {
-	return ut.Pos.To(4)
+	return ut.Range.End
 }

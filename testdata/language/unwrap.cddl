@@ -1,0 +1,8 @@
+basic-header = [
+    field1: int,
+    field2: text,
+]
+advanced-header = [
+    ~basic-header,
+    field3: bytes
+]

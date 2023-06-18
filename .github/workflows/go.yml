@@ -1,16 +1,14 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Go
+name: Go Build, Test and Fuzz
 
 on:
   push:
-    branches: [ "main" ]
+    branches: 
+      - "main"
+      - "feat/**"
   pull_request:
     branches: [ "main" ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
@@ -25,4 +23,12 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      run: go test -v ./...
+      run: |
+        mkdir artifacts 
+        go test -v ./...
+
+    - name: Upload Test Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: fuzz-artifact
+        path: ./artifacts/

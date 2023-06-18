@@ -24,8 +24,10 @@ go.work
 .DS_Store
 Thumbs.db
 
-# Local testdata
+# Local testdata and artifacts
+artifacts/
 testdata/local/
+
 
 # Environment files
 .env
