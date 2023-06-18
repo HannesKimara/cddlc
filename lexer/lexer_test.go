@@ -268,6 +268,19 @@ func (fs *failStore) Close() error {
 }
 
 func NewFailStore(fp string) (*failStore, error) {
+	dir := filepath.Dir(fp)
+	if _, err := os.Stat(dir); err != nil {
+		switch {
+		case os.IsNotExist(err):
+			err := os.Mkdir(dir, os.ModeDir)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, err
+		}
+	}
+
 	fd, err := os.OpenFile(fp, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		return nil, err
