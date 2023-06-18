@@ -1,0 +1,9 @@
+unlimited-people = [+ person]
+unilim-people-1 = [1* person]
+one-or-two-people = [1*2 person]
+optional-people = [ ? person ]
+
+person = (
+    name: tstr,
+    age: uint,
+)

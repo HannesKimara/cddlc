@@ -29,9 +29,23 @@ func TestEnvAdd(t *testing.T) {
 
 	for _, test := range tests {
 		environ := test.envInit()
-		err := environ.Add(test.ident, &test.value)
+		err := environ.Add(test.ident, test.value)
 		if err != test.err {
 			t.Fatal(err)
 		}
+		item := environ.Get(test.ident)
+		if item == nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestEnvGetEmpty(t *testing.T) {
+	environ := env.NewEnvironment()
+
+	ident := "non-existent-ident"
+	item := environ.Get(ident)
+	if item != nil {
+		t.Fatalf("Expected nil item for %s got %+v", ident, item)
 	}
 }

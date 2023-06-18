@@ -1,0 +1,5 @@
+device-address = byte
+max-byte = 255
+byte = 0..max-byte
+first-non-byte = 256
+byte1 = 0...first-non-byte

@@ -1,0 +1,34 @@
+name: Go Build, Test and Fuzz
+
+on:
+  push:
+    branches: 
+      - "main"
+      - "feat/**"
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: |
+        mkdir artifacts 
+        go test -v ./...
+
+    - name: Upload Test Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: fuzz-artifact
+        path: ./artifacts/

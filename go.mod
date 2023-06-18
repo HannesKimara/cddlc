@@ -2,7 +2,10 @@ module github.com/flowfunction/cddl
 
 go 1.18
 
-require github.com/urfave/cli/v2 v2.23.7
+require (
+	github.com/google/uuid v1.3.0
+	github.com/urfave/cli/v2 v2.23.7
+)
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect

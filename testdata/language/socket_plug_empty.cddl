@@ -1,0 +1,12 @@
+tcp-header = {seq: uint, ack: uint, * $$tcp-option}
+
+PersonalData = {
+    ? displayName: tstr,
+    NameComponents,
+    ? age: uint,
+    * $$personaldata-extensions
+}
+NameComponents = (
+    ? firstName: tstr,
+    ? familyName: tstr,
+)

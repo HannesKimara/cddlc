@@ -8,8 +8,8 @@ type GroupEntry interface {
 }
 
 type Group struct {
-	Pos   token.Position
-	Rules []Node
+	Pos     token.Position
+	Entries []GroupEntry
 }
 
 func (g *Group) Start() token.Position {
@@ -17,10 +17,10 @@ func (g *Group) Start() token.Position {
 }
 
 func (g *Group) End() token.Position {
-	if len(g.Rules) == 0 {
+	if len(g.Entries) == 0 {
 		return token.Position{Offset: -1}
 	}
-	return g.Rules[len(g.Rules)-1].End()
+	return g.Entries[len(g.Entries)-1].End()
 }
 
 func (g *Group) groupEntry() {}

@@ -1,0 +1,5 @@
+isTrue = true
+isFalse = false
+isBool = bool
+isBoolChoice = isTrue / isFalse
+ 

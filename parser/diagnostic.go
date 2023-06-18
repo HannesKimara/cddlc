@@ -3,45 +3,9 @@ package parser
 import (
 	"fmt"
 
+	"github.com/flowfunction/cddl/errors"
 	"github.com/flowfunction/cddl/token"
 )
-
-type Diagnostic interface {
-	String() string
-	Diagnostic() string
-
-	// Pos returns beginning position
-	Pos() token.Position
-}
-
-// Warning
-type Warning struct {
-	// Range - the range of positions in the source causing the warning
-	Range token.PositionRange
-
-	// Msg - the short message
-	Msg string
-
-	// Prefix - Prefix of the string formatted warning e.g. parser, lexer
-	Prefix string
-}
-
-// String returns the string representation of the Warning in the form
-//
-// `module` warning: msg
-func (w *Warning) String() string {
-	return fmt.Sprintf("%s warning: %s", w.Prefix, w.Msg)
-}
-
-// Diagnostic returns string formatted warning with position
-func (w *Warning) Diagnostic() string {
-	return fmt.Sprintf("%s at %s", w, w.Range)
-}
-
-// Pos returns the beginning position
-func (w *Warning) Pos() token.Position {
-	return w.Range.Start
-}
 
 type Error struct {
 	// Range - the range of positions in the source causing the error
@@ -50,11 +14,11 @@ type Error struct {
 	// Msg - the short message
 	Msg string
 
-	// Prefix - Prefix of the string formatted warning e.g. parser, lexer
+	// Prefix - Prefix of the string source e.g. parser, lexer
 	Prefix string
 }
 
-// String returns the string representation of the Warning in the form
+// String returns the string representation of the Error in the form
 //
 // `module` error: msg
 func (e *Error) String() string {
@@ -62,23 +26,29 @@ func (e *Error) String() string {
 }
 
 // Diagnostic returns string formatted error with position
-func (w *Error) Diagnostic() string {
-	return fmt.Sprintf("%s at %s", w, w.Range)
+func (e *Error) Diagnostic() string {
+	return fmt.Sprintf("%s at %s", e, e.Range.String())
 }
 
-// Pos returns the beginning position
-func (e *Error) Pos() token.Position {
+// Start returns the beginning position
+func (e *Error) Start() token.Position {
 	return e.Range.Start
 }
 
+// End returns the beginning position
+func (e *Error) End() token.Position {
+	return e.Range.End
+}
+
+// Error satisfies the error interface. Returns the same value as String
 func (e *Error) Error() string {
 	return e.String()
 }
 
-// NewWarning returns a Warning with the provided parameters.
-func NewWarning(prefix, msg string, start token.Position, end token.Position) *Warning {
-	return &Warning{
-		Prefix: prefix,
+// NewError returns an Error with the provided parameters.
+func NewError(msg string, start token.Position, end token.Position) *Error {
+	return &Error{
+		Prefix: "parser",
 		Range: token.PositionRange{
 			Start: start,
 			End:   end,
@@ -87,14 +57,45 @@ func NewWarning(prefix, msg string, start token.Position, end token.Position) *W
 	}
 }
 
-// NewWarning returns a Warning with the provided parameters.
-func NewError(prefix, msg string, start token.Position, end token.Position) *Error {
-	return &Error{
-		Prefix: prefix,
-		Range: token.PositionRange{
-			Start: start,
-			End:   end,
-		},
-		Msg: msg,
+// ErrorList encapsulates a collection of related errors.
+type ErrorList []errors.Diagnostic
+
+// String returns the concatenated individual errors.
+func (er ErrorList) String() string {
+	out := ""
+	for _, err := range er {
+		out += err.Error() + "\n"
 	}
+
+	return out
+}
+
+func (er ErrorList) Error() string {
+	return er.String()
+}
+
+func (er ErrorList) Start() token.Position {
+	if len(er) > 0 {
+		return er[0].Start()
+	}
+	return token.Position{}
+}
+
+func (er ErrorList) End() token.Position {
+	l := len(er)
+	if l > 0 {
+		return er[l-1].End()
+	}
+	return token.Position{}
+}
+
+func (er ErrorList) Diagnostic() string {
+	return er.String()
+}
+
+func (er ErrorList) Collect() ErrorList {
+	if len(er) == 0 {
+		return nil
+	}
+	return er
 }
