@@ -628,12 +628,19 @@ func (p *Parser) parseArray() (ast.Node, errors.Diagnostic) {
 	p.next()
 
 	for p.currToken != token.RBRACK {
-		rule, err := p.parseEntry(p.currToken.Precedence())
+		rawEntry, err := p.parseEntry(p.currToken.Precedence())
 		if err != nil {
 			return arr, err
 		}
-		if rule != nil {
-			arr.Rules = append(arr.Rules, rule)
+
+		var entry ast.GroupEntry
+
+		if castRule, ok := rawEntry.(ast.GroupEntry); ok {
+			entry = castRule
+		}
+		if entry != nil {
+			arr.Rules = append(arr.Rules, entry)
+
 		}
 		p.next()
 	}

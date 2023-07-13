@@ -4,7 +4,10 @@ go 1.18
 
 require (
 	github.com/google/uuid v1.3.0
+	github.com/iancoleman/strcase v0.2.0
 	github.com/urfave/cli/v2 v2.23.7
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+	golang.org/x/tools v0.10.0
 )
 
 require (
