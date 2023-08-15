@@ -12,7 +12,6 @@ import (
 
 	"github.com/flowfunction/cddl/ast"
 	"github.com/iancoleman/strcase"
-	"golang.org/x/tools/go/ast/astutil"
 )
 
 type Generator struct {
@@ -320,8 +319,8 @@ func NewGenerator() *Generator {
 	// 	panic("cddlc/gen: Failed to create file header from internal template")
 	// }
 
-	astutil.AddImport(fset, file, "github.com/flowfunction/cddl/runtime/validators")
-	astutil.AddImport(fset, file, "github.com/fxamacker/cbor/v2")
+	// astutil.AddImport(fset, file, "github.com/flowfunction/cddl/runtime/validators")
+	// astutil.AddImport(fset, file, "github.com/fxamacker/cbor/v2")
 
 	gen := &Generator{
 		file: file,
