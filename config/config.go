@@ -59,6 +59,8 @@ type Config struct {
 	Version string         `json:"version" yaml:"version"`
 	Plugins []*Plugin      `json:"plugins" yaml:"plugins"`
 	Builds  []*BuildConfig `json:"builds" yaml:"builds"`
+
+	Options map[string]interface{} `json:"options" yaml:"options"`
 }
 
 func (c *Config) Valid() error {

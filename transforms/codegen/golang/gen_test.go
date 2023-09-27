@@ -6,11 +6,11 @@ import (
 
 	"github.com/flowfunction/cddl/lexer"
 	"github.com/flowfunction/cddl/parser"
-	gogen "github.com/flowfunction/cddl/passes/codegen/golang"
+	gogen "github.com/flowfunction/cddl/transforms/codegen/golang"
 )
 
 func TestGen(t *testing.T) {
-	gen := gogen.NewGenerator()
+	gen := gogen.NewGenerator("lib")
 
 	src := `person = [name: tstr, age: uint]`
 	l := lexer.NewLexer([]byte(src))

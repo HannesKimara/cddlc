@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,7 +13,7 @@ import (
 	"github.com/flowfunction/cddl/config"
 	"github.com/flowfunction/cddl/lexer"
 	"github.com/flowfunction/cddl/parser"
-	gogen "github.com/flowfunction/cddl/passes/codegen/golang"
+	gogen "github.com/flowfunction/cddl/transforms/codegen/golang"
 
 	"github.com/urfave/cli/v2"
 )
@@ -84,7 +85,7 @@ func GenerateCmd(cCtx *cli.Context) error {
 				return errors.New("failed to get stat info on output directory `" + build.OutDir + "` with err: " + err.Error())
 			}
 			outPath := filepath.Join(build.OutDir, strings.TrimSuffix(file.Name(), ".cddl")+".go")
-			err := generateFile(cCtx, filepath.Join(build.SourceDir, file.Name()), outPath)
+			err := generateFile(cCtx, build.Package, filepath.Join(build.SourceDir, file.Name()), outPath)
 			if err != nil /*&& skip failed not set*/ {
 				return err
 			}
@@ -108,8 +109,8 @@ func loadConfigFromDir(dir string) (*config.Config, error) {
 	return config.LoadConfig(files[0])
 }
 
-func generateFile(cCtx *cli.Context, filepath, outPath string) error {
-	gen := gogen.NewGenerator()
+func generateFile(cCtx *cli.Context, pkgName, filepath, outPath string) error {
+	gen := gogen.NewGenerator(pkgName)
 	src, err := readSource(filepath)
 	if err != nil {
 		return err
@@ -137,7 +138,21 @@ func generateFile(cCtx *cli.Context, filepath, outPath string) error {
 
 	gen.Visit(cddl)
 
+	err = addBuildHeader(out)
+	if err != nil {
+		return err
+	}
 	gen.String(out)
+	return nil
+}
+
+func addBuildHeader(f io.Writer) error {
+	header := "/*\n  File generated using `" + filepath.Base(os.Args[0]) + " " + strings.Join(os.Args[1:], " ") + "`. DO NOT EDIT\n*/\n\n"
+
+	_, err := f.Write([]byte(header))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
