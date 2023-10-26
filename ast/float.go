@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/token"
 )
 
 // FloatType represents the AST Node for `float, float16, float32, float64` type definition tokens.

@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // BstrType represents the AST Node for the `bstr` type definition token.
 type BstrType struct {

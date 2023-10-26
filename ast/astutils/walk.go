@@ -3,7 +3,7 @@ package astutils
 import (
 	"fmt"
 
-	"github.com/flowfunction/cddl/ast"
+	"github.com/HannesKimara/cddlc/ast"
 )
 
 type Visitor interface {

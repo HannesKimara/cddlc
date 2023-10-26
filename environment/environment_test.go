@@ -3,8 +3,8 @@ package environment_test
 import (
 	"testing"
 
-	"github.com/flowfunction/cddl/ast"
-	env "github.com/flowfunction/cddl/environment"
+	"github.com/HannesKimara/cddlc/ast"
+	env "github.com/HannesKimara/cddlc/environment"
 )
 
 type EnvInitializer func() *env.Environment

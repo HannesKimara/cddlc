@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // NullType represents the AST Node for the `null` and `nil` tokens
 type NullType struct {

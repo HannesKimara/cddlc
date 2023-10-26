@@ -3,7 +3,7 @@ package environment
 import (
 	"errors"
 
-	"github.com/flowfunction/cddl/ast"
+	"github.com/HannesKimara/cddlc/ast"
 )
 
 var (

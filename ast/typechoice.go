@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // TypeChoice represents the AST Node for `/` type choice operator
 type TypeChoice struct {
