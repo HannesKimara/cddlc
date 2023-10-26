@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // BooleanType represents the AST Node for the `bool` type definition token.
 type BooleanType struct {

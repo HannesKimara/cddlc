@@ -1,12 +1,12 @@
-module github.com/flowfunction/cddl
+module github.com/HannesKimara/cddlc
 
-go 1.18
+go 1.21
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/iancoleman/strcase v0.2.0
-	github.com/urfave/cli/v2 v2.23.7
-	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+	github.com/iancoleman/strcase v0.3.0
+	github.com/urfave/cli/v2 v2.25.7
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	gopkg.in/yaml.v2 v2.4.0
 )
 

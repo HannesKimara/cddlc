@@ -9,11 +9,11 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/flowfunction/cddl/ast"
-	"github.com/flowfunction/cddl/errors"
-	"github.com/flowfunction/cddl/lexer"
-	"github.com/flowfunction/cddl/parser"
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/ast"
+	"github.com/HannesKimara/cddlc/errors"
+	"github.com/HannesKimara/cddlc/lexer"
+	"github.com/HannesKimara/cddlc/parser"
+	"github.com/HannesKimara/cddlc/token"
 )
 
 func testWalk(t *testing.T, valid, parsed ast.Node) {

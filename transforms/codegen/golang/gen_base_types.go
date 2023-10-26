@@ -3,7 +3,7 @@ package gogen
 import (
 	gast "go/ast"
 
-	"github.com/flowfunction/cddl/ast"
+	"github.com/HannesKimara/cddlc/ast"
 )
 
 func (g *Generator) transpileTstrType(tstr *ast.TstrType) *gast.Ident {

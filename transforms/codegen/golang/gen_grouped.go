@@ -8,7 +8,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/flowfunction/cddl/ast"
+	"github.com/HannesKimara/cddlc/ast"
 )
 
 func (g *Generator) Visit(node ast.Node) *Generator {

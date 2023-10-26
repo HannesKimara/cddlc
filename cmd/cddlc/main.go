@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/flowfunction/cddl/cmd/cddlc/commands"
+	"github.com/HannesKimara/cddlc/cmd/cddlc/commands"
 	"github.com/urfave/cli/v2"
 )
 

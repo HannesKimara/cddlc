@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	VALIDATOR_PKG = "github.com/flowfunction/cddl/runtime/validators"
+	VALIDATOR_PKG = "github.com/HannesKimara/cddlc/runtime/validators"
 )
 
 type structure struct {

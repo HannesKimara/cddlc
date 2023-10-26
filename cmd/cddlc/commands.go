@@ -9,9 +9,9 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/flowfunction/cddl/lexer"
-	"github.com/flowfunction/cddl/parser"
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/lexer"
+	"github.com/HannesKimara/cddlc/parser"
+	"github.com/HannesKimara/cddlc/token"
 	"github.com/urfave/cli/v2"
 )
 

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/flowfunction/cddl/ast"
+	"github.com/HannesKimara/cddlc/ast"
 	"github.com/iancoleman/strcase"
 )
 

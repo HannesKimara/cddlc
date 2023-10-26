@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // TextLiteral represents the AST Node for a text literal
 type TextLiteral struct {

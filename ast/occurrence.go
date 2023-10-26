@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // Optional represents the AST Node for the `?` prefixed optional entry
 type Optional struct {

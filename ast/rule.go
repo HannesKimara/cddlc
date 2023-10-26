@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // Rule represents the AST Node for typed identifer.
 // It maps the name of the type to the type

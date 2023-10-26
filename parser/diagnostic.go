@@ -3,8 +3,8 @@ package parser
 import (
 	"fmt"
 
-	"github.com/flowfunction/cddl/errors"
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/errors"
+	"github.com/HannesKimara/cddlc/token"
 )
 
 type Error struct {

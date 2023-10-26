@@ -3,7 +3,7 @@ package ast
 import (
 	"fmt"
 
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/token"
 )
 
 // IntegerType represents the AST Node for the `int` type decalration token

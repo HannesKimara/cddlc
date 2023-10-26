@@ -3,7 +3,7 @@ package codegen
 import (
 	"io"
 
-	"github.com/flowfunction/cddl/ast"
+	"github.com/HannesKimara/cddlc/ast"
 )
 
 // Generator decribes methods for a code generator

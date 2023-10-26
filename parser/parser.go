@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/flowfunction/cddl/ast"
-	"github.com/flowfunction/cddl/errors"
-	"github.com/flowfunction/cddl/lexer"
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/ast"
+	"github.com/HannesKimara/cddlc/errors"
+	"github.com/HannesKimara/cddlc/lexer"
+	"github.com/HannesKimara/cddlc/token"
 
-	env "github.com/flowfunction/cddl/environment"
+	env "github.com/HannesKimara/cddlc/environment"
 )
 
 type taskFn func() errors.Diagnostic

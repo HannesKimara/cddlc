@@ -5,8 +5,8 @@ import (
 	gast "go/ast"
 	"log"
 
-	"github.com/flowfunction/cddl/ast"
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/ast"
+	"github.com/HannesKimara/cddlc/token"
 )
 
 func (g *Generator) transformSizeOp(op *ast.SizeOperatorControl) (*structure, error) {

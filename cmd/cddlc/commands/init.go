@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/flowfunction/cddl/config"
+	"github.com/HannesKimara/cddlc/config"
 	"github.com/urfave/cli/v2"
 )
 

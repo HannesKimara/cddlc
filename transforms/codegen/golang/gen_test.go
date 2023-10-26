@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/flowfunction/cddl/lexer"
-	"github.com/flowfunction/cddl/parser"
-	gogen "github.com/flowfunction/cddl/transforms/codegen/golang"
+	"github.com/HannesKimara/cddlc/lexer"
+	"github.com/HannesKimara/cddlc/parser"
+	gogen "github.com/HannesKimara/cddlc/transforms/codegen/golang"
 )
 
 func TestGen(t *testing.T) {

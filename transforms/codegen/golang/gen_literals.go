@@ -5,7 +5,7 @@ import (
 	"go/token"
 	"strconv"
 
-	"github.com/flowfunction/cddl/ast"
+	"github.com/HannesKimara/cddlc/ast"
 )
 
 func (g *Generator) transpileTextLiteral(tl *ast.TextLiteral) *gast.BasicLit {

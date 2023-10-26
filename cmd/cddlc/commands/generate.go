@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/flowfunction/cddl/config"
-	"github.com/flowfunction/cddl/lexer"
-	"github.com/flowfunction/cddl/parser"
-	gogen "github.com/flowfunction/cddl/transforms/codegen/golang"
+	"github.com/HannesKimara/cddlc/config"
+	"github.com/HannesKimara/cddlc/lexer"
+	"github.com/HannesKimara/cddlc/parser"
+	gogen "github.com/HannesKimara/cddlc/transforms/codegen/golang"
 
 	"github.com/urfave/cli/v2"
 )

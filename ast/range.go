@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // Range represents the AST Node for `..` and `...` range definition tokens.
 type Range struct {
