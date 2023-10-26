@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // UintType represents the AST Node for `uint` data definition type
 type UintType struct {

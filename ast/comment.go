@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/token"
 )
 
 // Comment represents the AST Node for ;-style single line comment.

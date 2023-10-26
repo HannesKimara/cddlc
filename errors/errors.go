@@ -1,6 +1,6 @@
 package errors
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 type Diagnostic interface {
 	error

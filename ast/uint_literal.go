@@ -3,7 +3,7 @@ package ast
 import (
 	"fmt"
 
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/token"
 )
 
 // IntegerLiteral represents the AST Node for an integer literal i.e 3

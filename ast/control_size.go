@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // SizeOperatorControl represents the AST Node for `.size` control operator
 type SizeOperatorControl struct {

@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/flowfunction/cddl/token"
+	"github.com/HannesKimara/cddlc/token"
 )
 
 type Array struct {

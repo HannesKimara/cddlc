@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // ControlOpControl represents the AST Node for operators `.lt, .le, .gt, .ge, .eq, .ne` with numeric left and right values.
 // This also takes identifiers that resolve to numeric types.

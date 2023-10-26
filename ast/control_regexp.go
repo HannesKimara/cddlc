@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/flowfunction/cddl/token"
+import "github.com/HannesKimara/cddlc/token"
 
 // Regexp represents the AST Node for `.regexp` control operator
 type Regexp struct {
