@@ -6,7 +6,7 @@ import (
 
 type Array struct {
 	Pos   token.Position
-	Rules []Node
+	Rules []GroupEntry
 }
 
 func (a *Array) Start() token.Position {

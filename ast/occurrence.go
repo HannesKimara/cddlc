@@ -17,6 +17,8 @@ func (i *Optional) End() token.Position {
 	return i.Item.End()
 }
 
+func (i *Optional) groupEntry() {}
+
 type NMOccurrence struct {
 	Pos   token.Position
 	Token token.Token
@@ -31,3 +33,5 @@ func (nm *NMOccurrence) Start() token.Position {
 func (nm *NMOccurrence) End() token.Position {
 	return nm.M.End()
 }
+
+func (nm *NMOccurrence) groupEntry() {}
