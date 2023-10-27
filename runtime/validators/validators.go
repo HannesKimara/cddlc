@@ -1,3 +1,5 @@
+// Package validators implements validation functions for CDDL constraints.
+
 package validators
 
 import (

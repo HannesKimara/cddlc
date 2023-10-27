@@ -1,3 +1,5 @@
+// Package codegen implements a code generator interface for the CDDL compiler.
+
 package codegen
 
 import (

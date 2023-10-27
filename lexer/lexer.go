@@ -1,5 +1,5 @@
-// Package Lexer implements a scanner/tokenizer for the CDDL source
-// Tokens are produced by repeated calls to Next() method
+// Package Lexer implements a scanner/tokenizer for the CDDL source.
+
 package lexer
 
 import (

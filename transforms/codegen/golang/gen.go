@@ -1,3 +1,5 @@
+// Package gogen implements a golang code generator from a CDDL tree.
+
 package gogen
 
 import (

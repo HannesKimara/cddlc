@@ -1,3 +1,5 @@
+// Package config implements configuration for the cddlc tool
+
 package config
 
 import (

@@ -1,3 +1,5 @@
+// Package environment implements a symbol table for the CDDL parser and compiler.
+
 package environment
 
 import (

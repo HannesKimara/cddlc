@@ -1,3 +1,5 @@
+// Package ast implements nodes for the CDDL Abstract Syntax Tree
+
 package ast
 
 import "github.com/HannesKimara/cddlc/token"

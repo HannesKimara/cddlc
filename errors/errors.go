@@ -1,3 +1,5 @@
+// Package errors implements error handling for the CDDL parser and compiler.
+
 package errors
 
 import "github.com/HannesKimara/cddlc/token"

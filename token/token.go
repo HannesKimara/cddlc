@@ -1,3 +1,5 @@
+// Package token implements tokens for the CDDL source.
+
 package token
 
 import "fmt"

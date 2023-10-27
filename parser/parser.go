@@ -1,3 +1,5 @@
+// Package parser implements a parser for the CDDL source.
+
 package parser
 
 import (
