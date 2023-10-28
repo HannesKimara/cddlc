@@ -43,6 +43,12 @@ func main() {
 				Hidden: true,
 			},
 			{
+				Name:   "qrepl",
+				Usage:  "Start a quick repl",
+				Action: commands.Repl,
+				Hidden: true,
+			},
+			{
 				Name:   "doctor",
 				Usage:  "Show information about the current build",
 				Action: DoctorCmd,
