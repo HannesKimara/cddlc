@@ -47,6 +47,14 @@ func main() {
 				Usage:  "Start a quick repl",
 				Action: commands.Repl,
 				Hidden: true,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:       "lex",
+						Value:      false,
+						HasBeenSet: true,
+						Usage:      "set to true to display lex tokens in repl",
+					},
+				},
 			},
 			{
 				Name:   "doctor",

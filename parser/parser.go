@@ -22,7 +22,13 @@ type nudParseFn func() (ast.Node, errors.Diagnostic)
 type ledParseFn func(ast.Node) (ast.Node, errors.Diagnostic)
 
 // ParseConfig contains the configuration options for the parser. Passed on call to NewParser function.
-type Config struct{}
+type ConfigOpts func(*Parser)
+
+func WithEnv(val *env.Environment) func(*Parser) {
+	return func(p *Parser) {
+		p.environment = val
+	}
+}
 
 type Parser struct {
 	// instance of lexer
@@ -448,6 +454,28 @@ func (p *Parser) parseTag() (ast.Node, errors.Diagnostic) {
 	return tagBase, nil
 }
 
+func (p *Parser) parseEnumeration() (ast.Node, errors.Diagnostic) {
+	enum := &ast.Enumeration{
+		Pos:   p.pos,
+		Token: p.currToken,
+	}
+
+	p.next()
+
+	value, err := p.parseEntry(p.currToken.Precedence())
+	if err != nil {
+		bn := &ast.BadNode{
+			Base: value,
+		}
+		enum.Value = bn
+		return enum, err
+	}
+	enum.Value = value
+
+	return enum, nil
+
+}
+
 func (p *Parser) parseFloatTag() (*ast.Tag, errors.Diagnostic) {
 	tag := &ast.Tag{}
 	sections := strings.Split(p.currliteral, ".")
@@ -841,7 +869,48 @@ func (p *Parser) parseIntBound(left *ast.IntegerLiteral) (*ast.Range, errors.Dia
 }
 
 func (p *Parser) parseFloatBound(left *ast.FloatLiteral) (*ast.Range, errors.Diagnostic) {
-	return nil, nil
+	b := &ast.Range{
+		Pos:   p.pos,
+		Token: p.currToken,
+		From:  left,
+	}
+
+	p.next()
+	to, err := p.parseEntry(p.currToken.Precedence())
+	if err != nil {
+		return b, err
+	}
+	switch right := to.(type) {
+	case *ast.FloatLiteral:
+		b.To = right
+	case *ast.IntegerLiteral:
+		malformed := &ast.BadNode{Pos: right.Start(), Token: right.Token, Base: right, EndPos: right.End()}
+		b.To = malformed
+		return b, p.error("cannot use integer literal as upper bound to float range", right.Start(), right.End())
+	case *ast.Identifier:
+		b.To = right
+		ident := right.Name
+		identStart := right.Start()
+		identEnd := right.End()
+
+		p.tasks = append(p.tasks, func() errors.Diagnostic {
+			if !p.environment.Exists(right.Name) {
+				return p.error(fmt.Sprintf("identifier %s referenced does not exist", ident), identStart, identEnd)
+			}
+			val := p.environment.Get(ident)
+			switch val.(type) {
+			case *ast.FloatLiteral:
+				// pass
+			case *ast.IntegerLiteral:
+				return p.error("cannot use integer literal as upper bound to float range", identStart, identEnd)
+			default:
+				return p.error("expected integer upper bound", identStart, identEnd)
+			}
+			return nil
+		})
+	}
+
+	return b, nil
 }
 
 func (p *Parser) errorUnsupportedType(pos token.Position, operator string, supported token.Token) errors.Diagnostic {
@@ -881,14 +950,20 @@ func (p *Parser) registerNud(tok token.Token, fn nudParseFn) {
 	p.nuds[tok] = fn
 }
 
-func NewParser(lexer *lexer.Lexer, opts ...Config) *Parser {
+func NewParser(lexer *lexer.Lexer, opts ...ConfigOpts) *Parser {
 	p := &Parser{}
 	p.lexer = lexer
 
 	p.nuds = make(map[token.Token]nudParseFn)
 	p.leds = make(map[token.Token]ledParseFn)
 
-	p.environment = env.NewEnvironment()
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	if p.environment == nil {
+		p.environment = env.NewEnvironment()
+	}
 	p.error = func(msg string, start, end token.Position) errors.Diagnostic {
 		return NewError(msg, start, end)
 	}
@@ -927,6 +1002,7 @@ func NewParser(lexer *lexer.Lexer, opts ...Config) *Parser {
 	p.registerNud(token.ONE_OR_MORE, p.parseOMOccurrence)
 	p.registerNud(token.UNWRAP, p.parseUnwrap)
 	p.registerNud(token.HASH, p.parseTag)
+	p.registerNud(token.AMPERSAND, p.parseEnumeration)
 
 	p.leds[token.COLON] = p.parseColon
 	p.leds[token.TYPE_CHOICE] = p.parseTypeChoice

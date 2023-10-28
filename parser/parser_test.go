@@ -169,6 +169,13 @@ func testWalk(t *testing.T, valid, parsed ast.Node) {
 			t.Fatalf("expected node of type %T but found %T", valid, parsed)
 			return
 		}
+	case *ast.Enumeration:
+		if p, ok := parsed.(*ast.Enumeration); ok {
+			if val.Value != nil && p.Value != nil {
+				testWalk(t, val.Value, p.Value)
+			}
+
+		}
 	default:
 		t.Fatalf("unknown node type %T", val)
 		return
@@ -262,6 +269,7 @@ func TestNumericLiteral(t *testing.T) {
 		{"num = 1", &ast.IntegerLiteral{Literal: 1, Token: token.INT}, parser.ErrorList{}},
 		{"num = 2.4", &ast.FloatLiteral{Literal: 2.4, Token: token.FLOAT}, parser.ErrorList{}},
 		{"num = 0x10", &ast.IntegerLiteral{Literal: 16, Token: token.INT}, parser.ErrorList{}},
+		{"num = 0.10", &ast.FloatLiteral{Literal: 0.1, Token: token.FLOAT}, parser.ErrorList{}},
 	}
 
 	for _, tst := range tests {
@@ -280,6 +288,31 @@ func TestNumericLiteral(t *testing.T) {
 	}
 }
 
+func TestEnumeration(t *testing.T) {
+	name := &ast.Identifier{Name: "name"}
+	tests := []struct {
+		src   string
+		value *ast.Enumeration
+		err   parser.ErrorList
+	}{
+		{`name = &()`, &ast.Enumeration{Value: &ast.Group{}}, parser.ErrorList{}},
+	}
+
+	for _, tst := range tests {
+		trueAst := &ast.CDDL{Rules: []ast.CDDLEntry{&ast.Rule{Name: name, Value: tst.value}}}
+		l := lexer.NewLexer([]byte(tst.src))
+		p := parser.NewParser(l)
+
+		parsed, errs := p.ParseFile()
+		if len(errs) == len(tst.err) {
+			for i := 0; i < len(errs); i++ {
+				assertEqualDiagnostic(t, tst.err[i], errs[i])
+			}
+		}
+
+		testWalk(t, trueAst, parsed)
+	}
+}
 func TestRegexpOperator(t *testing.T) {
 	name := &ast.Identifier{Name: "some-text"}
 	tstrPos := token.Position{Offset: 12, Line: 1, Column: 13}
@@ -501,7 +534,10 @@ func TestRange(t *testing.T) {
 		value ast.Node
 		err   parser.ErrorList
 	}{
+		{`range = 0..10`, &ast.Range{From: &ast.IntegerLiteral{Literal: 0}, To: &ast.IntegerLiteral{Literal: 10}}, parser.ErrorList{}},
+		{`range = 0.0..10.0`, &ast.Range{From: &ast.FloatLiteral{Literal: 0}, To: &ast.FloatLiteral{Literal: 10}}, parser.ErrorList{}},
 		{`range = 0..10.0`, &ast.Range{}, parser.ErrorList{parser.NewError("cannot use float literal as upper bound to int range", token.Position{Line: 1, Column: 12}, token.Position{Line: 1, Column: 15})}},
+		{`range = 0.0..10`, &ast.Range{}, parser.ErrorList{parser.NewError("cannot use integer literal as upper bound to float range", token.Position{Line: 1, Column: 14}, token.Position{Line: 1, Column: 16})}},
 	}
 	for _, tst := range tests {
 		trueAst := &ast.CDDL{Rules: []ast.CDDLEntry{&ast.Rule{Name: name, Value: tst.value}}}
