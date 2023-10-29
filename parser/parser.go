@@ -1,5 +1,4 @@
 // Package parser implements a parser for the CDDL source.
-
 package parser
 
 import (
@@ -575,7 +574,7 @@ func (p *Parser) parseRegexp(left ast.Node) (ast.Node, errors.Diagnostic) {
 		Token: p.currToken,
 		Base:  base,
 	}
-	if p.peekToken != token.TEXT_LITERAL {
+	if p.peekToken != token.TEXT_LITERAL && p.peekToken != token.IDENT {
 		return r, p.errorTokenExpected(p.pos, token.TEXT_LITERAL)
 	}
 	p.next()
@@ -585,6 +584,23 @@ func (p *Parser) parseRegexp(left ast.Node) (ast.Node, errors.Diagnostic) {
 	}
 	r.Regex = regex
 	return r, nil
+}
+
+func (p *Parser) parseBits(left ast.Node) (ast.Node, errors.Diagnostic) {
+	b := &ast.Bits{
+		Pos:   p.pos,
+		Token: p.currToken,
+		Base:  left,
+	}
+
+	p.next()
+	constraint, err := p.parseEntry(p.currToken.Precedence())
+	if err != nil {
+		b.Base = wrapBadNode(constraint)
+		return b, err
+	}
+	b.Contstraint = constraint
+	return b, nil
 }
 
 func (p *Parser) parseIntegerLiteral() (*ast.IntegerLiteral, errors.Diagnostic) {
@@ -632,6 +648,14 @@ func (p *Parser) parseGroup() (ast.Node, errors.Diagnostic) {
 
 func isSameLineTokens(tok1, tok2 token.Position) bool {
 	return tok1.Line == tok2.Line
+}
+
+func wrapBadNode(node ast.Node) *ast.BadNode {
+	return &ast.BadNode{
+		Pos:    node.Start(),
+		Base:   node,
+		EndPos: node.End(),
+	}
 }
 
 func (p *Parser) parseMap() (ast.Node, errors.Diagnostic) {
@@ -904,7 +928,7 @@ func (p *Parser) parseFloatBound(left *ast.FloatLiteral) (*ast.Range, errors.Dia
 			case *ast.IntegerLiteral:
 				return p.error("cannot use integer literal as upper bound to float range", identStart, identEnd)
 			default:
-				return p.error("expected integer upper bound", identStart, identEnd)
+				return p.error("expected float upper bound", identStart, identEnd)
 			}
 			return nil
 		})
@@ -1015,6 +1039,8 @@ func NewParser(lexer *lexer.Lexer, opts ...ConfigOpts) *Parser {
 
 	p.leds[token.SIZE] = p.parseSizeOperator
 	p.leds[token.REGEXP] = p.parseRegexp
+	p.leds[token.BITS] = p.parseBits
+
 	p.leds[token.INCLUSIVE_BOUND] = p.parseBound
 	p.leds[token.EXCLUSIVE_BOUND] = p.parseBound
 	p.leds[token.ZERO_OR_MORE] = p.parseOccurrence
