@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 // SizeOperatorControl represents the AST Node for `.size` control operator
 type SizeOperatorControl struct {
@@ -25,4 +29,10 @@ func (sc *SizeOperatorControl) Start() token.Position {
 // End returns the end of the size
 func (sc *SizeOperatorControl) End() token.Position {
 	return sc.Size.End()
+}
+
+func (sc *SizeOperatorControl) String() string {
+	s := fmt.Sprintf("%s - %s", sc.Start(), sc.End())
+
+	return s
 }

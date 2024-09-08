@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 // BadNode represents a node formed due to  parsing error
 type BadNode struct {
@@ -25,4 +29,10 @@ func (b *BadNode) Start() token.Position {
 // End returns the estimated end of the bad node
 func (b *BadNode) End() token.Position {
 	return b.EndPos
+}
+
+func (b *BadNode) String() string {
+	s := fmt.Sprintf("%s - %s", b.Start(), b.End())
+
+	return s
 }

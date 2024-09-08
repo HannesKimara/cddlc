@@ -543,7 +543,7 @@ func (p *Parser) parseSizeOperator(left ast.Node) (ast.Node, errors.Diagnostic) 
 	}
 
 	switch val := left.(type) {
-	case *ast.BstrType, *ast.UintType, *ast.TstrType:
+	case *ast.BstrType, *ast.UintType, *ast.TstrType, *ast.BytesType:
 		sop.Type = val
 	default:
 		err := p.errorUnsupportedTypes(sop.Pos, p.currliteral, token.TSTR, token.BSTR, token.UINT)
@@ -704,9 +704,13 @@ func (p *Parser) parseArray() (ast.Node, errors.Diagnostic) {
 
 func (p *Parser) parseComment() (ast.Node, errors.Diagnostic) {
 	cg := &ast.CommentGroup{}
-	cg.List = append(cg.List, &ast.Comment{Pos: p.pos, Text: p.currliteral})
+	cg.List = append(cg.List, p.parseInnerComment())
 
 	for p.peekToken == token.COMMENT {
+		// If the comment is not on the next line it's a separate block.
+		if p.peekPos.Line-p.pos.Line > 1 {
+			break
+		}
 		p.next()
 		cg.List = append(cg.List, p.parseInnerComment())
 	}

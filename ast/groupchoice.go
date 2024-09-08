@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 type GroupChoice struct {
 	Pos           token.Position
@@ -14,4 +18,10 @@ func (gc *GroupChoice) Start() token.Position {
 
 func (gc *GroupChoice) End() token.Position {
 	return gc.Second.End()
+}
+
+func (gc *GroupChoice) String() string {
+	s := fmt.Sprintf("%s - %s", gc.Start(), gc.End())
+
+	return s
 }

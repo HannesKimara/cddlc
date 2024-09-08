@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 // Regexp represents the AST Node for `.regexp` control operator
 type Regexp struct {
@@ -16,4 +20,10 @@ func (r *Regexp) Start() token.Position {
 
 func (r *Regexp) End() token.Position {
 	return r.Regex.End()
+}
+
+func (r *Regexp) String() string {
+	s := fmt.Sprintf("%s - %s", r.Start(), r.End())
+
+	return s
 }

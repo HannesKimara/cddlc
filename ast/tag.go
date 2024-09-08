@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 type Tag struct {
 	Pos              token.Position
@@ -15,4 +19,10 @@ func (t *Tag) Start() token.Position {
 
 func (t *Tag) End() token.Position {
 	return t.Item.End().To(1) // add )
+}
+
+func (t *Tag) String() string {
+	s := fmt.Sprintf("%s - %s", t.Start(), t.End())
+
+	return s
 }

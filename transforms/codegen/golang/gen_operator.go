@@ -38,7 +38,9 @@ func (g *Generator) transformSizeOp(op *ast.SizeOperatorControl) (*structure, er
 	default:
 		panic("fix later")
 	}
-	g.addImport(VALIDATOR_PKG, "")
+	if g.withValidators {
+		g.addImport(VALIDATOR_PKG, "")
+	}
 
 	log.Println("Len validators: ", len(stct.validators))
 

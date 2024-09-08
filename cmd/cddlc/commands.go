@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 
@@ -19,18 +18,6 @@ const (
 	TAB = "    "
 )
 
-func readSource(filename string) (src []byte, err error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return
-	}
-	src, err = ioutil.ReadAll(f)
-	if err != nil {
-		return
-	}
-	return
-}
-
 func checkArgs(cCtx *cli.Context, n int) bool {
 	return cCtx.Args().Len() == n
 }
@@ -40,7 +27,7 @@ func LexerCmd(cCtx *cli.Context) error {
 		return errors.New("filename required")
 	}
 
-	src, err := readSource(cCtx.Args().First())
+	src, err := os.ReadFile(cCtx.Args().First())
 	if err != nil {
 		return err
 	}
@@ -69,7 +56,7 @@ func ParseCmd(cCtx *cli.Context) error {
 		return errors.New("filename required")
 	}
 
-	src, err := readSource(cCtx.Args().First())
+	src, err := os.ReadFile(cCtx.Args().First())
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 type Enumeration struct {
 	Pos   token.Position
@@ -13,6 +17,11 @@ func (e *Enumeration) Start() token.Position {
 }
 func (e *Enumeration) End() token.Position {
 	return e.Value.End()
+}
+func (e *Enumeration) String() string {
+	s := fmt.Sprintf("%s - %s", e.Start(), e.End())
+
+	return s
 }
 
 func (e *Enumeration) groupEntry() {}

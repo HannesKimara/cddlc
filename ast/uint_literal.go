@@ -20,3 +20,9 @@ func (ul *UintLiteral) Start() token.Position {
 func (ul *UintLiteral) End() token.Position {
 	return ul.Pos.To(len(fmt.Sprintf("%d", ul.Literal)))
 }
+
+func (ul *UintLiteral) String() string {
+	s := fmt.Sprintf("%s - %s", ul.Start(), ul.End())
+
+	return s
+}

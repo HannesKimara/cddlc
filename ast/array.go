@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/HannesKimara/cddlc/token"
 )
 
@@ -18,4 +20,10 @@ func (a *Array) End() token.Position {
 		return token.Position{Offset: -1}
 	}
 	return a.Rules[len(a.Rules)-1].End()
+}
+
+func (a *Array) String() string {
+	s := fmt.Sprintf("%s - %s", a.Start(), a.End())
+
+	return s
 }

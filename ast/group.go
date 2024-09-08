@@ -1,11 +1,23 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 type GroupEntry interface {
 	Node
 	groupEntry() // convenience function
 }
+
+// TODO: set during parsing instead
+type GroupType uint
+
+const (
+	GroupTypeStruct = iota + 1
+	GroupTypeEnum
+)
 
 type Group struct {
 	Pos     token.Position
@@ -22,5 +34,9 @@ func (g *Group) End() token.Position {
 	}
 	return g.Entries[len(g.Entries)-1].End()
 }
+func (g *Group) String() string {
+	s := fmt.Sprintf("%s - %s", g.Start(), g.End())
 
+	return s
+}
 func (g *Group) groupEntry() {}

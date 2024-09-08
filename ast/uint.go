@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 // UintType represents the AST Node for `uint` data definition type
 type UintType struct {
@@ -14,4 +18,9 @@ func (ut *UintType) Start() token.Position {
 
 func (ut *UintType) End() token.Position {
 	return ut.Range.End
+}
+func (ut *UintType) String() string {
+	s := fmt.Sprintf("%s - %s", ut.Start(), ut.End())
+
+	return s
 }

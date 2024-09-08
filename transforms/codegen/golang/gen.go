@@ -8,6 +8,8 @@ import (
 	"go/format"
 	"go/token"
 	"io"
+
+	"github.com/HannesKimara/cddlc/ast"
 )
 
 const (
@@ -55,15 +57,48 @@ func (s *structure) addValidatorCall(X, sel string, args ...interface{}) {
 func (s *structure) bindReferences(ref string) {
 }
 
+// IdentifierFormatter allows you to override the default identifier formatting
+type IdentifierFormatter func(ident string, trailingComment string, suggestion string) string
+
 // Generator contains the internal representation of the generation step
 type Generator struct {
-	pkg string
+	pkg            string
+	architecture   Architecture
+	withValidators bool
 
-	// structures []*structure
 	imports []*gast.ImportSpec
+
+	// Identifier formatting
+	identifierPrefix          string
+	customIdentifierFormatter IdentifierFormatter
+	fieldTagName              string
+
+	// Avoid naming collisions for nested types
+	currentGroupType ast.GroupType
+	currentGroupName string
+
+	// CommandHandling
+	lastRootComment *ast.Comment
+	commentHandler  CommentHandler
 
 	file *gast.File
 	fset *token.FileSet
+}
+
+func (g *Generator) Reset() {
+	g.file = &gast.File{
+		Name: gast.NewIdent(g.pkg),
+	}
+	g.fset = token.NewFileSet()
+	g.imports = []*gast.ImportSpec{}
+	g.currentGroupType = 0
+	g.currentGroupName = ""
+	g.lastRootComment = nil
+}
+
+// Adds a declaration to the file
+func (g *Generator) appendDecl(decl gast.Decl) {
+	g.file.Decls = append(g.file.Decls, decl)
 }
 
 // String flushes the generated tree to an output
@@ -118,10 +153,39 @@ func NewGenerator(pkgName string) *Generator {
 	}
 
 	gen := &Generator{
-		pkg:  pkgName,
-		file: file,
-		fset: fset,
+		pkg:            pkgName,
+		architecture:   ArchitectureGeneric,
+		withValidators: true,
+		fieldTagName:   "cbor",
+		file:           file,
+		fset:           fset,
 	}
 
 	return gen
+}
+
+// SetArchitecture sets the architecture of the generated code
+// it determines the size of the integer types used in the generated code.
+func (g *Generator) SetArchitecture(arch Architecture) {
+	g.architecture = arch
+}
+
+func (g *Generator) SetIdentifierPrefix(prefix string) {
+	g.identifierPrefix = prefix
+}
+
+func (g *Generator) SetWithValidators(enable bool) {
+	g.withValidators = enable
+}
+
+func (g *Generator) SetFieldTagName(name string) {
+	g.fieldTagName = name
+}
+
+func (g *Generator) SetIdentifierFormatter(formatter IdentifierFormatter) {
+	g.customIdentifierFormatter = formatter
+}
+
+func (g *Generator) SetCommentHandler(handler CommentHandler) {
+	g.commentHandler = handler
 }

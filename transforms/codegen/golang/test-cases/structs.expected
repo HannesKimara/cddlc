@@ -1,0 +1,61 @@
+package lib
+
+// (cddlc) Ident: person
+type Person struct {
+	_ struct {
+	} `cbor:",toarray"`
+	Name string `cbor:"name"`
+	Age  uint   `cbor:"age"`
+}
+
+// (cddlc) Ident: pii
+type Pii struct {
+	Age      int    `cbor:"age"`
+	Name     string `cbor:"name"`
+	Employer string `cbor:"employer"`
+}
+
+// (cddlc) Ident: employee
+type Employee struct {
+	Pii *Pii `cbor:"pii,omitempty"`
+}
+
+// (cddlc) Ident: dog
+type Dog struct {
+	IntKey_0 int     `cbor:"0"`
+	IntKey_1 string  `cbor:"1"`
+	IntKey_2 float64 `cbor:"2"`
+}
+
+// (cddlc) Ident: response
+type Response struct {
+	RequestId int `cbor:"request-id"`
+}
+
+// (cddlc) Ident: DeviceCapability
+type DeviceCapability uint
+
+const (
+	DeviceCapabilityReceiveAudio DeviceCapability = 1
+	DeviceCapabilityReceiveVideo DeviceCapability = 2
+)
+
+// (cddlc) Ident: content
+type Content struct {
+	Url string `cbor:"url"`
+}
+
+// (cddlc) Ident: device-info
+type DeviceInfo struct {
+	Response
+	DisplayName string `cbor:"display-name"`
+	State       struct {
+		Power   bool `cbor:"power"`
+		Standby bool `cbor:"standby"`
+	} `cbor:"state"`
+	Capabilities []DeviceCapability `cbor:"capabilities"`
+	Secret       []byte             `cbor:"secret"`
+	NowPlaying   *struct {
+		Content
+	} `cbor:"now-playing,omitempty"`
+}
