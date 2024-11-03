@@ -23,7 +23,7 @@ go install github.com/HannesKimara/cddlc/cmd/cddlc@latest
 
 ![cddlc demo](./docs/static/cddlc-demo.gif)
 
-To get started using the parser library visit the [docs](https://pkg.go.dev/github.com/HannesKimara/cddlc)
+To get started using the parser library visit the [docs](https://pkg.go.dev/github.com/HannesKimara/cddlc). The docs to the `cddlc` tool are available [here](https://cddlc.github.io/docs)
 
 ## Supported features
 | CDDL | Parser | Code Generator |
