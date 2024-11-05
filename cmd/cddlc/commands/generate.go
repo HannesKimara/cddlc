@@ -68,7 +68,7 @@ func GenerateCmd(cCtx *cli.Context) error {
 		if !stat.IsDir() {
 			return errors.New("`" + build.SourceDir + "`: is not a directory")
 		}
-		files, err := ioutil.ReadDir(build.SourceDir)
+		files, err := os.ReadDir(build.SourceDir)
 		if err != nil {
 			return err
 		}
@@ -142,7 +142,7 @@ func generateFile(cCtx *cli.Context, pkgName, filepath, outPath string) error {
 	if err != nil {
 		return err
 	}
-	gen.String(out)
+
 	return nil
 }
 

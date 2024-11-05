@@ -1,0 +1,24 @@
+package lib
+
+// (cddlc) Ident: AuthStatus
+type AuthStatus uint
+
+const (
+	AuthStatusAuthenticated AuthStatus = 0
+	AuthStatusUnknownError  AuthStatus = 1
+	AuthStatusTimeout       AuthStatus = 2
+)
+
+// (cddlc) Ident: CloseEventReason
+type CloseEventReason uint
+
+const (
+	CloseEventReasonCloseMethodCalled  CloseEventReason = 1
+	CloseEventReasonUnrecoverableError CloseEventReason = 100
+)
+
+// (cddlc) Ident: close-event
+type CloseEvent struct {
+	ConnectionId uint             `cbor:"connection-id"`
+	Reason       CloseEventReason `cbor:"reason"`
+}

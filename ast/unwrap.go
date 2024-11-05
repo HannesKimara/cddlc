@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 type Unwrap struct {
 	Pos   token.Position
@@ -14,4 +18,10 @@ func (u *Unwrap) Start() token.Position {
 
 func (u *Unwrap) End() token.Position {
 	return u.Item.End()
+}
+
+func (u *Unwrap) String() string {
+	s := fmt.Sprintf("%s - %s", u.Start(), u.End())
+
+	return s
 }

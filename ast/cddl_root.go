@@ -15,7 +15,7 @@ type CDDL struct {
 func (c *CDDL) String() string {
 	out := "CDDL ("
 	for _, rule := range c.Rules {
-		out += fmt.Sprintf("%+v,", rule)
+		out += fmt.Sprintf("%T %+v,\n", rule, rule)
 	}
 	out += ")"
 	return out

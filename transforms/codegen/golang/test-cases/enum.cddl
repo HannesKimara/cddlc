@@ -1,0 +1,13 @@
+auth-status = &(
+  authenticated: 0
+  unknown-error: 1
+  timeout: 2
+)
+
+close-event = {
+  connection-id: uint
+  reason: &(
+    close-method-called: 1
+    unrecoverable-error: 100
+  )
+}

@@ -1,0 +1,42 @@
+person = [name: tstr, age: uint]
+
+pii = (
+    age: int,
+    name: tstr,
+    employer: tstr,
+)
+
+employee = (
+    ? pii: pii
+)
+
+dog = {
+    0: int, ; age
+    1: tstr ; name
+    2: float ; leash-length
+}
+
+response = (
+  request-id: int
+)
+
+device-capability = &(
+  receive-audio: 1
+  receive-video: 2
+)
+
+content = {
+    url: text
+}
+
+device-info = {
+  response
+  display-name: text
+  state: {
+    power: bool
+    standby: bool
+  }
+  capabilities: [* device-capability]
+  secret: bytes .size 64
+  ? now-playing: {content}
+}

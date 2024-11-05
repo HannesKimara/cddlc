@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 // ControlOpControl represents the AST Node for operators `.lt, .le, .gt, .ge, .eq, .ne` with numeric left and right values.
 // This also takes identifiers that resolve to numeric types.
@@ -19,4 +23,10 @@ func (cc *ComparatorOpControl) Start() token.Position {
 
 func (cc *ComparatorOpControl) End() token.Position {
 	return cc.Right.End()
+}
+
+func (cc *ComparatorOpControl) String() string {
+	s := fmt.Sprintf("%s - %s", cc.Start(), cc.End())
+
+	return s
 }

@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/HannesKimara/cddlc/token"
 )
 
@@ -16,6 +18,12 @@ func (c *Comment) Start() token.Position {
 
 func (c *Comment) End() token.Position {
 	return c.Pos.To(len(c.Text))
+}
+
+func (c *Comment) String() string {
+	s := fmt.Sprintf("%s - %s", c.Start(), c.End())
+
+	return s
 }
 
 func (c *Comment) cddlEntry()  {}

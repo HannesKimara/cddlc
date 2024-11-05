@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 // Bits represents the AST Node for `.bits` control operator
 type Bits struct {
@@ -23,4 +27,10 @@ func (r *Bits) Start() token.Position {
 
 func (r *Bits) End() token.Position {
 	return r.Contstraint.End()
+}
+
+func (r *Bits) String() string {
+	s := fmt.Sprintf("%s - %s", r.Start(), r.End())
+
+	return s
 }

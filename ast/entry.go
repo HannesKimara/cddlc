@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 // Entry represents the Node for a group entry
 // It maps the name of the type to the type
@@ -17,5 +21,9 @@ func (r *Entry) Start() token.Position {
 func (r *Entry) End() token.Position {
 	return r.Value.End()
 }
+func (r *Entry) String() string {
+	s := fmt.Sprintf("%s - %s", r.Start(), r.End())
 
+	return s
+}
 func (r *Entry) groupEntry() {}

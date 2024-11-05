@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"fmt"
+
+	"github.com/HannesKimara/cddlc/token"
+)
 
 type Map struct {
 	Pos   token.Position
@@ -17,4 +21,10 @@ func (m *Map) End() token.Position {
 		return token.Position{Offset: -1}
 	}
 	return m.Rules[len(m.Rules)-1].End()
+}
+
+func (m *Map) String() string {
+	s := fmt.Sprintf("%s - %s", m.Start(), m.End())
+
+	return s
 }

@@ -2,7 +2,9 @@
 
 package ast
 
-import "github.com/HannesKimara/cddlc/token"
+import (
+	"github.com/HannesKimara/cddlc/token"
+)
 
 // Node interface represents an AST Node
 type Node interface {
@@ -11,4 +13,6 @@ type Node interface {
 
 	// End returns the end token of the node
 	End() token.Position
+
+	String() string
 }

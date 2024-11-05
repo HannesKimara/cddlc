@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/HannesKimara/cddlc/token"
 )
 
@@ -18,6 +20,11 @@ func (ft *FloatType) Start() token.Position {
 func (ft *FloatType) End() token.Position {
 	return ft.Pos.To(5) // TODO: support bases float64, 32, 16
 }
+func (ft *FloatType) String() string {
+	s := fmt.Sprintf("%s - %s", ft.Start(), ft.End())
+
+	return s
+}
 
 // FloatLiteral represesnts the AST Node for float type token i.e. 3.412
 type FloatLiteral struct {
@@ -32,4 +39,9 @@ func (fl *FloatLiteral) Start() token.Position {
 
 func (fl *FloatLiteral) End() token.Position {
 	return fl.Range.End
+}
+func (fl *FloatLiteral) String() string {
+	s := fmt.Sprintf("%s - %s", fl.Start(), fl.End())
+
+	return s
 }
